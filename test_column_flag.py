@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy.inspection import inspect
+from sqlalchemy.sql import functions
 
 
 def test_flag_initial_value(Message):
@@ -45,6 +46,16 @@ def test_flag_is_descriptor_not_column(Message):
     assert "content" in mapper.columns
     assert "has_content" in mapper.all_orm_descriptors
     assert "has_content" not in mapper.columns
+
+
+def test_assign_default_sql_func(Message, session):
+    message = Message(content="Spam")
+    session.add(message)
+    assert message.sent_at is None
+    message.is_sent = True
+    assert isinstance(message.sent_at, functions.Function)
+    session.commit()
+    assert (datetime.utcnow() - message.sent_at) < timedelta(seconds=1)
 
 
 def test_assign_readonly(Message):

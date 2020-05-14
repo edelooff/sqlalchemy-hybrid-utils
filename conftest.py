@@ -17,9 +17,11 @@ def Message(Base):
         id = sa.Column(sa.Integer, primary_key=True)
         content = sa.Column(sa.Text)
         sent_at = sa.Column(sa.DateTime)
+        delivered_at = sa.Column("delivery_date", sa.DateTime)
 
         has_content = column_flag(content)
         is_sent = column_flag(sent_at, default=sa.func.now())
+        is_delivered = column_flag(delivered_at)
 
     return Message
 
