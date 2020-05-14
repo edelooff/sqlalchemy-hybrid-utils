@@ -58,6 +58,13 @@ def test_assign_default_sql_func(Message, session):
     assert (datetime.utcnow() - message.sent_at) < timedelta(seconds=1)
 
 
+def test_assign_during_creation(Message, session):
+    message = Message(content="Spam", is_sent=True)
+    session.add(message)
+    session.commit()
+    assert (datetime.utcnow() - message.sent_at) < timedelta(seconds=1)
+
+
 def test_assign_readonly(Message):
     message = Message(content="Spam")
     with pytest.raises(AttributeError):
