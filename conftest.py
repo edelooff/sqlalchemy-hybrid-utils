@@ -13,7 +13,7 @@ def Base():
 @pytest.fixture(scope="session")
 def Message(Base):
     class Message(Base):
-        __tablename__ = 'message'
+        __tablename__ = "message"
         id = sa.Column(sa.Integer, primary_key=True)
         content = sa.Column(sa.Text)
         sent_at = sa.Column(sa.DateTime)
@@ -27,7 +27,7 @@ def Message(Base):
 @pytest.fixture(scope="session")
 def engine(Base, Message):
     """Sets up an SQLite databae engine and configures required tables."""
-    engine = sa.create_engine('sqlite://', echo=True)
+    engine = sa.create_engine("sqlite://", echo=True)
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)

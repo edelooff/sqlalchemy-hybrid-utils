@@ -41,10 +41,10 @@ def test_flag_select_expr(Message, session):
 
 def test_flag_is_descriptor_not_column(Message):
     mapper = inspect(Message).mapper
-    assert 'content' in mapper.all_orm_descriptors
-    assert 'content' in mapper.columns
-    assert 'has_content' in mapper.all_orm_descriptors
-    assert 'has_content' not in mapper.columns
+    assert "content" in mapper.all_orm_descriptors
+    assert "content" in mapper.columns
+    assert "has_content" in mapper.all_orm_descriptors
+    assert "has_content" not in mapper.columns
 
 
 def test_assign_readonly(Message):
@@ -62,4 +62,4 @@ def test_assign_non_bool(Message):
         message.is_sent = 1
 
     with pytest.raises(TypeError, match="boolean"):
-        message.is_sent = 'ham'
+        message.is_sent = "ham"
