@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from sqlalchemy.inspection import inspect
 
@@ -25,6 +27,16 @@ def test_flag_after_database_read(Message, session):
     session.commit()
     assert msg.has_content
     assert not msg.is_sent
+
+
+def test_flag_select_expr(Message, session):
+    session.add(Message(content="Spam"))
+    session.add(Message(content="Spam and eggs"))
+    session.add(Message(content="Ham and spam", sent_at=datetime.utcnow()))
+
+    assert session.query(Message).filter(Message.has_content).count() == 3
+    assert session.query(Message).filter(Message.is_sent).count() == 1
+    assert session.query(Message).filter(~Message.is_sent).count() == 2
 
 
 def test_flag_is_descriptor_not_column(Message):
