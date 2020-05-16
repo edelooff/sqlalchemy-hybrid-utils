@@ -63,6 +63,16 @@ def test_assign_default_python_func(Message, session):
     assert datetime_equal(message.delivered_at, datetime.utcnow())
 
 
+def test_assign_default_scalar(Message, session):
+    message = Message(content="Spam")
+    session.add(message)
+    assert message.sent_at is None
+    message.is_sent_scalar = True
+    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+    session.commit()
+    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+
+
 def test_assign_default_sql_func(Message, session):
     message = Message(content="Spam")
     session.add(message)
