@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
@@ -21,7 +23,7 @@ def Message(Base):
 
         has_content = column_flag(content)
         is_sent = column_flag(sent_at, default=sa.func.now())
-        is_delivered = column_flag(delivered_at)
+        is_delivered = column_flag(delivered_at, default=datetime.utcnow)
 
     return Message
 

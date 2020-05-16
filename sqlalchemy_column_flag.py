@@ -13,6 +13,8 @@ def column_flag(column, **options):
     def fset(self, value, default=options.get("default")):
         if not isinstance(value, bool):
             raise TypeError("Flag only accepts boolean values")
+        if callable(default):
+            default = default()
         return setattr(self, target_key(self), default if value else None)
 
     def expr(cls):

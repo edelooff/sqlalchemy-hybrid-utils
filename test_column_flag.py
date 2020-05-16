@@ -5,6 +5,11 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.sql import functions
 
 
+def datetime_equal(test_value, reference, max_delta=1):
+    """Returns whether test value is within max_delta of reference value."""
+    return abs(test_value - reference) < timedelta(seconds=max_delta)
+
+
 def test_flag_initial_value(Message):
     empty_message = Message()
     assert not empty_message.has_content
@@ -48,6 +53,16 @@ def test_flag_is_descriptor_not_column(Message):
     assert "has_content" not in mapper.columns
 
 
+def test_assign_default_python_func(Message, session):
+    message = Message(content="Spam")
+    session.add(message)
+    assert message.sent_at is None
+    message.is_delivered = True
+    assert datetime_equal(message.delivered_at, datetime.utcnow())
+    session.commit()
+    assert datetime_equal(message.delivered_at, datetime.utcnow())
+
+
 def test_assign_default_sql_func(Message, session):
     message = Message(content="Spam")
     session.add(message)
@@ -55,14 +70,14 @@ def test_assign_default_sql_func(Message, session):
     message.is_sent = True
     assert isinstance(message.sent_at, functions.Function)
     session.commit()
-    assert (datetime.utcnow() - message.sent_at) < timedelta(seconds=1)
+    assert datetime_equal(message.sent_at, datetime.utcnow())
 
 
 def test_assign_during_creation(Message, session):
     message = Message(content="Spam", is_sent=True)
     session.add(message)
     session.commit()
-    assert (datetime.utcnow() - message.sent_at) < timedelta(seconds=1)
+    assert datetime_equal(message.sent_at, datetime.utcnow())
 
 
 def test_assign_readonly(Message):
