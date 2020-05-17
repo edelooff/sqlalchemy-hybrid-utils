@@ -107,19 +107,20 @@ def test_default_at_creation_sql_func(Message, session):
     assert datetime_equal(message.sent_at, datetime.utcnow())
 
 
-def test_assign_readonly(Message):
+def test_assign_readonly_error(Message):
     message = Message(content="Spam")
     with pytest.raises(AttributeError):
         message.has_content = True
 
+    with pytest.raises(AttributeError):
+        Message(has_content=True)
 
-def test_assign_non_bool(Message):
+
+@pytest.mark.parametrize("flag_value", [None, 1, "ham"])
+def test_assign_non_bool_error(Message, flag_value):
     message = Message(content="Spam")
     with pytest.raises(TypeError, match="boolean"):
-        message.is_sent = None
+        message.is_sent = flag_value
 
     with pytest.raises(TypeError, match="boolean"):
-        message.is_sent = 1
-
-    with pytest.raises(TypeError, match="boolean"):
-        message.is_sent = "ham"
+        Message(is_sent=flag_value)
