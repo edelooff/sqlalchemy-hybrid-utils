@@ -83,9 +83,26 @@ def test_assign_default_sql_func(Message, session):
     assert datetime_equal(message.sent_at, datetime.utcnow())
 
 
-def test_assign_during_creation(Message, session):
+def test_default_at_creation_python_func(Message, session):
+    message = Message(content="Spam", is_delivered=True)
+    session.add(message)
+    assert datetime_equal(message.delivered_at, datetime.utcnow())
+    session.commit()
+    assert datetime_equal(message.delivered_at, datetime.utcnow())
+
+
+def test_default_at_creation_scalar(Message, session):
+    message = Message(content="Spam", is_sent_scalar=True)
+    session.add(message)
+    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+    session.commit()
+    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+
+
+def test_default_at_creation_sql_func(Message, session):
     message = Message(content="Spam", is_sent=True)
     session.add(message)
+    assert isinstance(message.sent_at, functions.Function)
     session.commit()
     assert datetime_equal(message.sent_at, datetime.utcnow())
 
