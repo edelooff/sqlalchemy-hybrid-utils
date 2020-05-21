@@ -1,11 +1,14 @@
+from sqlalchemy.event import listen
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import Mapper, mapperlib
 
 
 class DerivedColumn:
     def __init__(self, column, default=None):
         self.column = column
         self.default = default
+        self.target = None
+        listen(Mapper, "after_configured", self._set_static_target_attr)
 
     def _default_functions(self):
         setter = self.default
@@ -13,25 +16,38 @@ class DerivedColumn:
             setter = lambda: self.default  # noqa
         return {True: setter, False: lambda: None}
 
+    def _set_static_target_attr(self):
+        """Looks up the attribute name that points to the tracked column.
+
+        When multiple mappers exist for the same table, this may lead to an
+        unresolvable conflict, but only if the column's attribute name differs
+        between mappers. In the case of single table inheritance there is a
+        single table with multiple mappers, but the attribute names are shared,
+        avoiding conflict.
+        """
+        target_names = set()
+        for mapper in mapperlib._mapper_registry:
+            if self.column.table in mapper.tables:
+                attr = mapper.get_property_by_column(self.column)
+                target_names.add(attr.key)
+        if len(target_names) != 1:
+            raise TypeError("Unable to find unambiguous column attribute name.")
+        self.target = next(iter(target_names))
+
     def make_getter(self):
-        def _fget(self, column=self.column):
-            mapper = inspect(self).mapper
-            target = mapper.get_property_by_column(column).key
-            return getattr(self, target) is not None
+        def _fget(self, outer=self):
+            return getattr(self, outer.target) is not None
 
         return _fget
 
     def make_setter(self):
         if self.default is None:
             return None
-        defaults = self._default_functions()
 
-        def _fset(self, value, column=self.column, defaults=defaults):
+        def _fset(self, value, outer=self, defaults=self._default_functions()):
             if not isinstance(value, bool):
                 raise TypeError("Flag only accepts boolean values")
-            mapper = inspect(self).mapper
-            target = mapper.get_property_by_column(column).key
-            return setattr(self, target, defaults[value]())
+            return setattr(self, outer.target, defaults[value]())
 
         return _fset
 
