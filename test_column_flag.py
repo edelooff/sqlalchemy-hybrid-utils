@@ -10,12 +10,12 @@ def datetime_equal(test_value, reference, max_delta=1):
     return abs(test_value - reference) < timedelta(seconds=max_delta)
 
 
-def test_flag_initial_value(Message):
-    empty_message = Message()
-    assert not empty_message.has_content
-
-    message = Message(content="Eggs and spam")
-    assert message.has_content
+@pytest.mark.parametrize(
+    "content, expected_value", [("Eggs and spam", True), ("", True), (None, False)]
+)
+def test_flag_initial_value(Message, content, expected_value):
+    empty_message = Message(content=content)
+    assert empty_message.has_content == expected_value
 
 
 def test_flag_follows_column(Message):
