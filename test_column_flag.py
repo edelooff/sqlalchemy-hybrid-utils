@@ -124,3 +124,20 @@ def test_assign_non_bool_error(Message, flag_value):
 
     with pytest.raises(TypeError, match="boolean"):
         Message(is_sent=flag_value)
+
+
+def test_table_inheritance_base(Booking):
+    booking = Booking(paid_at=datetime.utcnow())
+    assert booking.type == "standard"
+    assert booking.is_paid
+    assert not hasattr(booking, 'cancelled_at')
+    assert not hasattr(booking, 'is_cancelled')
+
+
+def test_table_inheritance_subclass(Cancellable):
+    booking = Cancellable(paid_at=datetime.utcnow())
+    assert booking.type == "cancellable"
+    assert booking.is_paid
+    assert not booking.is_cancelled
+    booking.cancelled_at = datetime.utcnow()
+    assert booking.is_cancelled

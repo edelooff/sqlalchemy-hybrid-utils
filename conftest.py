@@ -30,7 +30,30 @@ def Message(Base):
 
 
 @pytest.fixture(scope="session")
-def engine(Base, Message):
+def Booking(Base):
+    class Booking(Base):
+        __tablename__ = "booking"
+        __mapper_args__ = {"polymorphic_on": "type", "polymorphic_identity": "standard"}
+        id = sa.Column(sa.Integer, primary_key=True)
+        type = sa.Column(sa.Text)
+        paid_at = sa.Column(sa.DateTime)
+        is_paid = column_flag(paid_at)
+
+    return Booking
+
+
+@pytest.fixture(scope="session")
+def Cancellable(Booking):
+    class CancellableBooking(Booking):
+        __mapper_args__ = {"polymorphic_identity": "cancellable"}
+        cancelled_at = sa.Column(sa.DateTime)
+        is_cancelled = column_flag(cancelled_at)
+
+    return CancellableBooking
+
+
+@pytest.fixture(scope="session")
+def engine(Base, Message, Booking, Cancellable):
     """Sets up an SQLite databae engine and configures required tables."""
     engine = sa.create_engine("sqlite://", echo=True)
     Base.metadata.create_all(bind=engine)

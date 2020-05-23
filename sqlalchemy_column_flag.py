@@ -21,15 +21,17 @@ class DerivedColumn:
 
         When multiple mappers exist for the same table, this may lead to an
         unresolvable conflict, but only if the column's attribute name differs
-        between mappers. In the case of single table inheritance there is a
-        single table with multiple mappers, but the attribute names are shared,
-        avoiding conflict.
+        between mappers.
+
+        In the case of single table inheritance, the column property might be
+        absent on some mappers, but has the same name on those that contain it.
         """
         target_names = set()
         for mapper in mapperlib._mapper_registry:
             if self.column.table in mapper.tables:
-                attr = mapper.get_property_by_column(self.column)
-                target_names.add(attr.key)
+                if self.column in mapper.columns.values():
+                    attr = mapper.get_property_by_column(self.column)
+                    target_names.add(attr.key)
         if len(target_names) != 1:
             raise TypeError("Unable to find unambiguous column attribute name.")
         self.target = next(iter(target_names))
