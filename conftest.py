@@ -25,6 +25,7 @@ def Message(Base):
         is_sent = column_flag(sent_at, default=sa.func.now())
         is_sent_scalar = column_flag(sent_at, default=datetime(2020, 1, 1))
         is_delivered = column_flag(delivered_at, default=datetime.utcnow)
+        in_transit = column_flag(sent_at & ~delivered_at)
 
     return Message
 

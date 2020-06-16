@@ -2,12 +2,16 @@ from sqlalchemy.event import listen
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapper, mapperlib
 
+from expression import Expression
+
 
 class DerivedColumn:
-    def __init__(self, column, default=None):
-        self.column = column
+    def __init__(self, expression, default=None):
+        self.expression = Expression(expression, force_bool=True)
         self.default = default
-        self.target = None
+        if len(self.expression.columns) > 1 and self.default is not None:
+            return TypeError("Cannot use default for multi-column expression.")
+        self.targets = {}
         listen(Mapper, "after_configured", self._set_static_target_attr)
 
     def _default_functions(self):
@@ -26,35 +30,45 @@ class DerivedColumn:
         In the case of single table inheritance, the column property might be
         absent on some mappers, but has the same name on those that contain it.
         """
-        target_names = set()
-        for mapper in mapperlib._mapper_registry:
-            if self.column.table in mapper.tables:
-                if self.column in mapper.columns.values():
-                    attr = mapper.get_property_by_column(self.column)
-                    target_names.add(attr.key)
-        if len(target_names) != 1:
-            raise TypeError("Unable to find unambiguous column attribute name.")
-        self.target = next(iter(target_names))
+        for column in self.expression.columns:
+            target_names = set()
+            for mapper in mapperlib._mapper_registry:
+                if column.table in mapper.tables:
+                    print(mapper.columns.values())
+                    if column in mapper.columns.values():
+                        attr = mapper.get_property_by_column(column)
+                        target_names.add(attr.key)
+            if len(target_names) != 1:
+                raise TypeError(
+                    f"Unable to find unambiguous mapped attribute "
+                    f"name for {column!r}: {target_names}."
+                )
+            self.targets[column] = next(iter(target_names))
+
+    def column_values(self, orm_obj):
+        """Returns values of column-attributes for given ORM object."""
+        return {col: getattr(orm_obj, attr) for col, attr in self.targets.items()}
 
     def make_getter(self):
         def _fget(self, outer=self):
-            return getattr(self, outer.target) is not None
+            return outer.expression.evaluate(outer.column_values(self))
 
         return _fget
 
     def make_setter(self):
         if self.default is None:
             return None
+        defaults = self._default_functions()
 
-        def _fset(self, value, outer=self, defaults=self._default_functions()):
+        def _fset(self, value, targets=self.targets, defaults=defaults):
             if not isinstance(value, bool):
                 raise TypeError("Flag only accepts boolean values")
-            return setattr(self, outer.target, defaults[value]())
+            return setattr(self, next(iter(targets.values())), defaults[value]())
 
         return _fset
 
     def make_expression(self):
-        def _expr(cls, expr=self.column.isnot(None)):
+        def _expr(cls, expr=self.expression.sql):
             return expr
 
         return _expr

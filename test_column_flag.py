@@ -18,7 +18,7 @@ def test_flag_initial_value(Message, content, expected_value):
     assert empty_message.has_content == expected_value
 
 
-def test_flag_follows_column(Message):
+def test_flag_runtime_evaluation(Message):
     message = Message()
     message.content = "Spam spam spam"
     assert message.has_content
@@ -130,8 +130,8 @@ def test_table_inheritance_base(Booking):
     booking = Booking(paid_at=datetime.utcnow())
     assert booking.type == "standard"
     assert booking.is_paid
-    assert not hasattr(booking, 'cancelled_at')
-    assert not hasattr(booking, 'is_cancelled')
+    assert not hasattr(booking, "cancelled_at")
+    assert not hasattr(booking, "is_cancelled")
 
 
 def test_table_inheritance_subclass(Cancellable):
