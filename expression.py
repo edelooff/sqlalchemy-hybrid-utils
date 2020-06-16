@@ -41,6 +41,7 @@ class Expression:
     mode, the given expression itself is also modified with these same semantics
     and stored on the `sql` attribute.
     """
+
     def __init__(self, expression: ColumnElement, force_bool: bool = False):
         self.sql = self._rephrase_as_boolean(expression) if force_bool else expression
         self.serialized = tuple(self._serialize(expression, force_bool=force_bool))
