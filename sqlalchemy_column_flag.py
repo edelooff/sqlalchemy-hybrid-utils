@@ -9,9 +9,9 @@ class DerivedColumn:
     def __init__(self, expression, default=None):
         self.expression = Expression(expression, force_bool=True)
         self.default = default
-        if len(self.expression.columns) > 1 and self.default is not None:
-            return TypeError("Cannot use default for multi-column expression.")
         self.targets = {}
+        if len(self.expression.columns) > 1 and self.default is not None:
+            raise TypeError("Cannot use default for multi-column expression.")
         listen(Mapper, "after_configured", self._set_static_target_attr)
 
     def _default_functions(self):
@@ -34,7 +34,6 @@ class DerivedColumn:
             target_names = set()
             for mapper in mapperlib._mapper_registry:
                 if column.table in mapper.tables:
-                    print(mapper.columns.values())
                     if column in mapper.columns.values():
                         attr = mapper.get_property_by_column(column)
                         target_names.add(attr.key)
