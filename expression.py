@@ -170,13 +170,11 @@ def rephrase_as_boolean(expr: ClauseElement) -> ClauseElement:
     a binary expression) in to "IS NOT NULL" clauses, and inversed columns
     (~Column) into the negated form ("IS NULL").
     """
-    if isinstance(expr, Column) and expr.type is not Boolean:
+    if isinstance(expr, Column) and not isinstance(expr.type, Boolean):
         return expr.isnot(None)
     elif isinstance(expr, UnaryExpression):
-        if expr.operator is operator.inv:
-            target = expr.element
-            if isinstance(target, Column) and expr.type is not Boolean:
-                return expr.element.is_(None)
+        if expr.operator is operator.inv and isinstance(expr.element, Column):
+            return expr.element.is_(None)
         return expr
     elif isinstance(expr, BooleanClauseList):
         expr.clauses = list(map(rephrase_as_boolean, expr.clauses))
