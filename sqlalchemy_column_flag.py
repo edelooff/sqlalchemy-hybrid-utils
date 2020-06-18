@@ -1,26 +1,36 @@
+from __future__ import annotations
+
+from typing import Any, Callable, Dict
+
 from sqlalchemy.event import listen
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapper, mapperlib
+from sqlalchemy.sql.elements import ClauseElement
+from sqlalchemy.sql.schema import Column
 
 from expression import Expression
 
+# Type aliases
+ColumnDefaults = Dict[bool, Any]
+MapperTargets = Dict[Column, str]
+
 
 class DerivedColumn:
-    def __init__(self, expression, default=None):
+    def __init__(self, expression: ClauseElement, default: Any = None):
         self.expression = Expression(expression, force_bool=True)
         self.default = default
+        self.targets: MapperTargets = {}
         if len(self.expression.columns) > 1 and self.default is not None:
-            return TypeError("Cannot use default for multi-column expression.")
-        self.targets = {}
+            raise TypeError("Cannot use default for multi-column expression.")
         listen(Mapper, "after_configured", self._set_static_target_attr)
 
-    def _default_functions(self):
+    def _default_functions(self) -> ColumnDefaults:
         setter = self.default
         if not callable(setter):
             setter = lambda: self.default  # noqa
         return {True: setter, False: lambda: None}
 
-    def _set_static_target_attr(self):
+    def _set_static_target_attr(self) -> None:
         """Looks up the attribute name that points to the tracked column.
 
         When multiple mappers exist for the same table, this may lead to an
@@ -34,7 +44,6 @@ class DerivedColumn:
             target_names = set()
             for mapper in mapperlib._mapper_registry:
                 if column.table in mapper.tables:
-                    print(mapper.columns.values())
                     if column in mapper.columns.values():
                         attr = mapper.get_property_by_column(column)
                         target_names.add(attr.key)
@@ -45,42 +54,37 @@ class DerivedColumn:
                 )
             self.targets[column] = next(iter(target_names))
 
-    def column_values(self, orm_obj):
+    def column_values(self, orm_obj: Any) -> Dict[Column, Any]:
         """Returns values of column-attributes for given ORM object."""
         return {col: getattr(orm_obj, attr) for col, attr in self.targets.items()}
 
-    def make_getter(self):
-        def _fget(self, outer=self):
+    def make_getter(self) -> Callable[[Any, DerivedColumn], Any]:
+        def _fget(self: Any, outer: DerivedColumn = self) -> Any:
             return outer.expression.evaluate(outer.column_values(self))
 
         return _fget
 
-    def make_setter(self):
-        if self.default is None:
-            return None
-        defaults = self._default_functions()
-
-        def _fset(self, value, targets=self.targets, defaults=defaults):
+    def make_setter(self,) -> Callable[[Any, Any, MapperTargets, ColumnDefaults], None]:
+        def _fset(
+            self: Any,
+            value: Any,
+            targets: MapperTargets = self.targets,
+            defaults: ColumnDefaults = self._default_functions(),
+        ) -> None:
             if not isinstance(value, bool):
                 raise TypeError("Flag only accepts boolean values")
-            return setattr(self, next(iter(targets.values())), defaults[value]())
+            setattr(self, next(iter(targets.values())), defaults[value]())
 
         return _fset
 
-    def make_expression(self):
-        def _expr(cls, expr=self.expression.sql):
-            return expr
-
-        return _expr
-
-    def create_hybrid(self):
+    def create_hybrid(self) -> hybrid_property:
         return hybrid_property(
             fget=self.make_getter(),
-            fset=self.make_setter(),
-            expr=self.make_expression(),
+            fset=self.make_setter() if self.default is not None else None,
+            expr=lambda cls: self.expression.sql,
         )
 
 
-def column_flag(column, **options):
-    derived = DerivedColumn(column, **options)
+def column_flag(expression: ClauseElement, **options: Any) -> hybrid_property:
+    derived = DerivedColumn(expression, **options)
     return derived.create_hybrid()
