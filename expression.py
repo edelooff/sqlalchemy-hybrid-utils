@@ -43,7 +43,7 @@ class Expression:
     """
 
     def __init__(self, expression: ClauseElement, force_bool: bool = False):
-        self.sql = self._rephrase_as_boolean(expression) if force_bool else expression
+        self.sql = rephrase_as_boolean(expression) if force_bool else expression
         self.serialized = tuple(self._serialize(expression, force_bool=force_bool))
 
     def __eq__(self, other: Any) -> bool:
@@ -68,26 +68,6 @@ class Expression:
         """Returns a set of columns used in the expression."""
         coltype = SymbolType.column
         return {symbol.value for symbol in self.serialized if symbol.type is coltype}
-
-    def _rephrase_as_boolean(self, expr: ClauseElement) -> ClauseElement:
-        """Rephrases SQL expression allowing boolean usage of non-bool columns.
-
-        This is done by converting bare non-Boolean columns (those not used in
-        a binary expression) in to "IS NOT NULL" clauses, and inversed columns
-        (~Column) into the negated form ("IS NULL").
-        """
-        if isinstance(expr, Column) and expr.type is not Boolean:
-            return expr.isnot(None)
-        elif isinstance(expr, UnaryExpression):
-            if expr.operator is operator.inv:
-                target = expr.element
-                if isinstance(target, Column) and target.type is not Boolean:
-                    return expr.element.is_(None)
-            return expr
-        elif isinstance(expr, BooleanClauseList):
-            expr.clauses = list(map(self._rephrase_as_boolean, expr.clauses))
-            return expr
-        return expr
 
     def _serialize(
         self, expr: ClauseElement, force_bool: bool = False
@@ -181,3 +161,24 @@ class SymbolType(Enum):
     column = auto()
     literal = auto()
     operator = auto()
+
+
+def rephrase_as_boolean(expr: ClauseElement) -> ClauseElement:
+    """Rephrases SQL expression allowing boolean usage of non-bool columns.
+
+    This is done by converting bare non-Boolean columns (those not used in
+    a binary expression) in to "IS NOT NULL" clauses, and inversed columns
+    (~Column) into the negated form ("IS NULL").
+    """
+    if isinstance(expr, Column) and expr.type is not Boolean:
+        return expr.isnot(None)
+    elif isinstance(expr, UnaryExpression):
+        if expr.operator is operator.inv:
+            target = expr.element
+            if isinstance(target, Column) and expr.type is not Boolean:
+                return expr.element.is_(None)
+        return expr
+    elif isinstance(expr, BooleanClauseList):
+        expr.clauses = list(map(rephrase_as_boolean, expr.clauses))
+        return expr
+    return expr
