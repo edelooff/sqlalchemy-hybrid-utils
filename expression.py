@@ -20,6 +20,7 @@ from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import Boolean
 
 OPERATOR_MAP = {
+    operators.in_op: lambda left, right: left in right,
     operators.is_: operator.eq,
     operators.isnot: operator.ne,
     operators.istrue: None,
@@ -111,6 +112,8 @@ class Expression:
                 yield from self._serialize(clause, force_bool=force_bool)
             yield Symbol(expr.operator, arity=len(expr.clauses))
         elif isinstance(expr, BinaryExpression):
+            if isinstance(expr.operator, operators.custom_op):
+                raise TypeError(f"Unsupported operator {expr.operator}")
             yield from self._serialize(expr.right)
             yield from self._serialize(expr.left)
             yield Symbol(OPERATOR_MAP.get(expr.operator, expr.operator), arity=2)
