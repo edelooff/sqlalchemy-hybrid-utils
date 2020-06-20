@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import Column, Boolean, Integer, Text, null
+from sqlalchemy import Column, Boolean, Integer, Text, func, null
 
 from expression import Expression
 
@@ -10,6 +10,44 @@ INT_A = Column("int_a", Integer)
 INT_B = Column("int_b", Integer)
 INT_C = Column("int_c", Integer)
 TEXT = Column("text", Text)
+
+
+# Equality and comparability
+def test_expression_self_equality():
+    expr = Expression(BOOL_A & (INT_A > 5))
+    assert expr == expr
+
+
+def test_expression_equality():
+    expr = BOOL_A & (INT_A > 5)
+    left = Expression(expr)
+    right = Expression(expr)
+    assert left is not right
+    assert left == right
+
+
+def test_expression_inequality():
+    assert Expression(BOOL_A) != Expression(~BOOL_A)
+
+
+@pytest.mark.parametrize("other", [[], [None], 0, 100, True, False, None])
+def test_expression_and_symbol_comparability(other):
+    expr = Expression(BOOL_A & (INT_A > 5))
+    assert expr != other
+    for symbol in expr.serialized:
+        assert symbol == symbol
+        assert symbol != other
+
+
+# Serialization limits
+def test_serlialize_unsupported_expression():
+    with pytest.raises(TypeError, match="Unsupported expression"):
+        Expression(func.exp(INT_A, 2))
+
+
+def test_serlialize_unsupported_opeator():
+    with pytest.raises(TypeError, match="Unsupported operator"):
+        Expression(INT_A.op("^")(INT_A))
 
 
 # Coercion
