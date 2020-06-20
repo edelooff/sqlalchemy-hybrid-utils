@@ -137,6 +137,25 @@ def test_multiplication():
     assert expr.evaluate({INT_A: 4, INT_B: -3}) == -12
 
 
+def test_bitwise_inversion():
+    expr = Expression(~INT_A)
+    assert expr.evaluate({INT_A: 127}) == -128
+    assert expr.evaluate({INT_A: -128}) == 127
+
+
 def test_mixed_math():
     expr = Expression((INT_A * INT_B) + (INT_A / INT_C))
     assert expr.evaluate({INT_A: 8, INT_B: 2, INT_C: 4}) == 18
+
+
+# Test additional expression evaluation
+def test_evaluate_bind_param_equals():
+    expr = Expression(INT_A == 5)
+    assert not expr.evaluate({INT_A: 4})
+    assert expr.evaluate({INT_A: 5})
+
+
+def test_evaluate_bind_param_contains():
+    expr = Expression(INT_A.in_([1, 2, 3, 4, 5]))
+    assert expr.evaluate({INT_A: 3})
+    assert not expr.evaluate({INT_A: 6})

@@ -20,6 +20,7 @@ from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import Boolean
 
 OPERATOR_MAP = {
+    operators.in_op: lambda left, right: left in right,
     operators.is_: operator.eq,
     operators.isnot: operator.ne,
     operators.istrue: None,
