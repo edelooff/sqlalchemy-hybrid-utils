@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from sqlalchemy import Column, Integer
 
-from sqlalchemy_column_flag import column_flag
+from sqlalchemy_hybrid_utils import column_flag
 
 
 @pytest.mark.parametrize(

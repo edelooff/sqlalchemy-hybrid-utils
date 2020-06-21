@@ -4,7 +4,7 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_column_flag import column_flag
+from sqlalchemy_hybrid_utils import column_flag
 
 
 @pytest.fixture(scope="session")

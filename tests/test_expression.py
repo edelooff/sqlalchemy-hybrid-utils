@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import Column, Boolean, Integer, Text, func, null
 
-from expression import Expression
+from sqlalchemy_hybrid_utils.expression import Expression
 
 BOOL_A = Column("bool_a", Boolean)
 BOOL_B = Column("bool_b", Boolean)

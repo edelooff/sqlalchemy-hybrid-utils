@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapper, mapperlib
 from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.schema import Column
 
-from expression import Expression
+from .expression import Expression
 
 # Type aliases
 ColumnDefaults = Dict[bool, Any]
