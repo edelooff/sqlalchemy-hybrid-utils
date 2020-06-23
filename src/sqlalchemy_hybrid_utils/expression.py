@@ -161,11 +161,20 @@ class Symbol:
     def __iter__(self) -> Iterator[Any]:
         yield from (self.type, self.arity, self.value)
 
+    def __repr__(self) -> str:
+        params = [f"type={self.type!r}", f"value={self.value!r}"]
+        if self.arity is not None:
+            params.append(f"arity={self.arity!r}")
+        return f"<Symbol({', '.join(params)})"
+
 
 class SymbolType(Enum):
     column = auto()
     literal = auto()
     operator = auto()
+
+    def __repr__(self) -> str:
+        return f"<{self.name}>"
 
 
 def rephrase_as_boolean(expr: ClauseElement) -> ClauseElement:
