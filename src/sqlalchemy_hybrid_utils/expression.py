@@ -47,7 +47,7 @@ class Expression:
 
     def __init__(self, expression: ClauseElement, force_bool: bool = False):
         self.sql = rephrase_as_boolean(expression) if force_bool else expression
-        self.serialized = tuple(self._serialize(expression, force_bool=force_bool))
+        self.serialized = tuple(self._serialize(self.sql))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, type(self)):
@@ -72,9 +72,7 @@ class Expression:
         coltype = SymbolType.column
         return {symbol.value for symbol in self.serialized if symbol.type is coltype}
 
-    def _serialize(
-        self, expr: ClauseElement, force_bool: bool = False
-    ) -> Iterator[Symbol]:
+    def _serialize(self, expr: ClauseElement) -> Iterator[Symbol]:
         """Serializes an SQLAlchemy expression to Python functions.
 
         This takes an SQLAlchemy expression tree and converts it into an
@@ -92,26 +90,19 @@ class Expression:
             yield Symbol(None)
         # Columns and column-wrapping functions
         elif isinstance(expr, Column):
-            if force_bool and not isinstance(expr.type, Boolean):
-                yield from self._serialize(expr.isnot(None))
-            else:
-                yield Symbol(expr)
+            yield Symbol(expr)
         elif isinstance(expr, AsBoolean):
             yield Symbol(expr.element)
             if (func := OPERATOR_MAP[expr.operator]) is not None:
                 yield Symbol(func, arity=1)
         elif isinstance(expr, UnaryExpression):
             target = expr.element
-            target_is_column = isinstance(target, Column)
-            if force_bool and expr.operator == operator.inv and target_is_column:
-                yield from self._serialize(target.is_(None))
-            else:
-                yield from self._serialize(target, force_bool=force_bool)
-                yield Symbol(expr.operator, arity=1)
+            yield from self._serialize(target)
+            yield Symbol(expr.operator, arity=1)
         # Multi-clause expressions
         elif isinstance(expr, BooleanClauseList):
             for clause in expr.clauses:
-                yield from self._serialize(clause, force_bool=force_bool)
+                yield from self._serialize(clause)
             yield Symbol(expr.operator, arity=len(expr.clauses))
         elif isinstance(expr, BinaryExpression):
             if isinstance(expr.operator, operators.custom_op):
