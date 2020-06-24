@@ -1,0 +1,13 @@
+
+[flake8]
+max-line-length = 88
+ignore =
+    E203  # disables "whitespace before ':'", as this is sometimes desired by PEP8 (and Black manages this)
+    W503  # disables "line break before binary operator", preferred for this project
+exclude =
+    .git
+    __pycache__
+    .mypy_cache
+    .nox
+    .pytest_cache
+    .vscode
