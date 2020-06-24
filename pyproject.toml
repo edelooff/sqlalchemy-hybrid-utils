@@ -30,6 +30,7 @@ source = ["sqlalchemy_hybrid_utils"]
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+exclude_lines = ["if TYPE_CHECKING:"]
 
 [build-system]
 requires = ["poetry>=0.12"]

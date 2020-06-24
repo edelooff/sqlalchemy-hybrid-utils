@@ -3,7 +3,7 @@ from __future__ import annotations
 import operator
 from collections import deque
 from enum import Enum, auto
-from typing import Any, Deque, Dict, Iterator, Optional, Set
+from typing import Any, Deque, Iterator, Optional
 
 from sqlalchemy.sql import operators
 from sqlalchemy.sql.elements import (
@@ -18,6 +18,8 @@ from sqlalchemy.sql.elements import (
 )
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import Boolean
+
+from .typing import ColumnSet, ColumnValues
 
 OPERATOR_MAP = {
     operators.in_op: lambda left, right: left in right,
@@ -52,7 +54,7 @@ class Expression:
             return NotImplemented
         return self.serialized == other.serialized
 
-    def evaluate(self, column_values: Dict[Column, Any]) -> Any:
+    def evaluate(self, column_values: ColumnValues) -> Any:
         """Evaluates the SQLAlchemy expression on the current column values."""
         stack = Stack()
         for itype, arity, value in self.serialized:
@@ -65,7 +67,7 @@ class Expression:
         return stack.pop()
 
     @property
-    def columns(self) -> Set[Column]:
+    def columns(self) -> ColumnSet:
         """Returns a set of columns used in the expression."""
         coltype = SymbolType.column
         return {symbol.value for symbol in self.serialized if symbol.type is coltype}
@@ -84,7 +86,7 @@ class Expression:
         if isinstance(expr, BindParameter):
             yield Symbol(expr.value)
         elif isinstance(expr, Grouping):
-            value = [element.value for element in expr.element]
+            value = [elem.value for elem in expr.element]  # type: ignore[attr-defined]
             yield Symbol(value)
         elif isinstance(expr, Null):
             yield Symbol(None)

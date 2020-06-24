@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 from sqlalchemy.event import listen
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapper, mapperlib
 from sqlalchemy.sql.elements import ClauseElement
-from sqlalchemy.sql.schema import Column
 
 from .expression import Expression
-
-# Type aliases
-ColumnDefaults = Dict[bool, Any]
-MapperTargets = Dict[Column, str]
+from .typing import ColumnDefaults, ColumnValues, MapperTargets
 
 
 class DerivedColumn:
@@ -42,7 +38,7 @@ class DerivedColumn:
         """
         for column in self.expression.columns:
             target_names = set()
-            for mapper in mapperlib._mapper_registry:
+            for mapper in mapperlib._mapper_registry:  # type: ignore[attr-defined]
                 if column.table in mapper.tables:
                     if column in mapper.columns.values():
                         attr = mapper.get_property_by_column(column)
@@ -54,7 +50,7 @@ class DerivedColumn:
                 )
             self.targets[column] = next(iter(target_names))
 
-    def column_values(self, orm_obj: Any) -> Dict[Column, Any]:
+    def column_values(self, orm_obj: Any) -> ColumnValues:
         """Returns values of column-attributes for given ORM object."""
         return {col: getattr(orm_obj, attr) for col, attr in self.targets.items()}
 
