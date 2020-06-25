@@ -19,6 +19,7 @@ mypy = "*"
 sqlalchemy-stubs = "*"
 coverage = { version = "*", extras = ["toml"] }
 pytest-cov = "*"
+nox = "*"
 
 [tool.coverage.paths]
 source = ["src"]
