@@ -107,6 +107,22 @@ def test_default_at_creation_sql_func(Message, session):
     assert datetime_equal(message.sent_at, datetime.utcnow())
 
 
+@pytest.mark.parametrize(
+    "column, flag",
+    [
+        ("sent_at", "is_sent"),
+        ("sent_at", "is_sent_scalar"),
+        ("delivered_at", "is_delivered"),
+    ],
+)
+def test_default_false(Message, column, flag):
+    message = Message(content="spam", **{column: datetime.utcnow()})
+    assert getattr(message, column) is not None
+    assert getattr(message, flag)
+    setattr(message, flag, False)
+    assert getattr(message, column) is None
+
+
 def test_assign_readonly_error(Message):
     message = Message(content="Spam")
     with pytest.raises(AttributeError):
