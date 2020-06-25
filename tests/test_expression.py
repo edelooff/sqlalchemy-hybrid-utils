@@ -34,9 +34,6 @@ def test_expression_inequality():
 def test_expression_and_symbol_comparability(other):
     expr = Expression(BOOL_A & (INT_A > 5))
     assert expr != other
-    for symbol in expr.serialized:
-        assert symbol == symbol
-        assert symbol != other
 
 
 # Serialization limits
