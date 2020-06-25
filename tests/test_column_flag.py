@@ -79,7 +79,7 @@ def test_assign_default_sql_func(Message, session):
     assert message.sent_at is None
     message.is_sent = True
     assert isinstance(message.sent_at, functions.Function)
-    session.commit()
+    session.commit()  # type: ignore[unreachable]
     assert datetime_equal(message.sent_at, datetime.utcnow())
 
 

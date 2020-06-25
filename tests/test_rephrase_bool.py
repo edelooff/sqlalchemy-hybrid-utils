@@ -2,7 +2,7 @@ from sqlalchemy import Column, Boolean, Text
 
 import pytest
 
-from expression import rephrase_as_boolean
+from sqlalchemy_hybrid_utils.expression import rephrase_as_boolean
 
 HAS_PROPOSAL = Column("has_proposal", Boolean)
 HAS_RESPONSE = Column("has_response", Boolean)
