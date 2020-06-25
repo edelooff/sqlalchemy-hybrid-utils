@@ -1,10 +1,4 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    DateTime,
-    Text,
-    create_engine,
-    func)
+from sqlalchemy import Column, Integer, DateTime, Text, create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
@@ -32,9 +26,7 @@ def main():
     session.add_all([art1, art2])
     session.flush()
     count_total = session.query(Article).count()
-    count_published = session.query(Article)\
-        .filter(Article.is_published)\
-        .count()
+    count_published = session.query(Article).filter(Article.is_published).count()
     print(f"Articles published out of total: {count_published}/{count_total}")
 
     assert art1.is_published
