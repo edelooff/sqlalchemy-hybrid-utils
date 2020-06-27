@@ -45,9 +45,9 @@ class Expression:
     and stored on the `sql` attribute.
     """
 
-    def __init__(self, expression: ClauseElement, force_bool: bool = False):
-        self.sql = rephrase_as_boolean(expression) if force_bool else expression
-        self.serialized = tuple(self._serialize(self.sql))
+    def __init__(self, expression: ClauseElement):
+        self.serialized = tuple(self._serialize(expression))
+        self.sql = expression
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, type(self)):
@@ -132,10 +132,15 @@ class Stack:
 class Symbol:
     __slots__ = "value", "type", "arity"
 
-    def __init__(self, value: Any, arity: Optional[int] = None):
+    def __init__(self, value: Any, *, arity: Optional[int] = None):
         self.value = value
         self.type = self._determine_type(value)
         self.arity = arity
+        if self.type is SymbolType.operator:
+            if self.arity is None:
+                raise ValueError(f"Arity required for Symbol of type {self.type}.")
+        elif self.arity is not None:
+            raise ValueError(f"Arity not allowed for non-operator type {self.type}.")
 
     def _determine_type(self, value: Any) -> SymbolType:
         if isinstance(value, Column):
