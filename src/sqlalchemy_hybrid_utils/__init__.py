@@ -43,7 +43,7 @@ class DerivedColumn:
                     if column in mapper.columns.values():
                         attr = mapper.get_property_by_column(column)
                         target_names.add(attr.key)
-            if len(target_names) != 1:
+            if len(target_names) != 1:  # pragma: no cover
                 raise TypeError(
                     f"Unable to find unambiguous mapped attribute "
                     f"name for {column!r}: {target_names}."
