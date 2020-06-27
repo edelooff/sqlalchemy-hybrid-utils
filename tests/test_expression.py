@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import Column, Boolean, Integer, Text, func, null
+from sqlalchemy import Column, Boolean, Integer, Text, func
 
 from sqlalchemy_hybrid_utils.expression import Expression
 
@@ -45,47 +45,6 @@ def test_serlialize_unsupported_expression():
 def test_serlialize_unsupported_opeator():
     with pytest.raises(TypeError, match="Unsupported operator"):
         Expression(INT_A.op("^")(INT_A))
-
-
-# Coercion
-@pytest.mark.parametrize("column", [INT_A, TEXT])
-def test_sql_equivalences(column):
-    left = Expression(column != null())
-    right = Expression(column.isnot(None))
-    assert left == right
-
-
-@pytest.mark.parametrize("column", [INT_A, TEXT])
-def test_coerce_simple_expression(column):
-    left = Expression(column, force_bool=True)
-    right = Expression(column.isnot(None))
-    assert left == right
-
-
-@pytest.mark.parametrize("column", [INT_A, TEXT])
-def test_coerce_negated_expression(column):
-    left = Expression(~column, force_bool=True)
-    right = Expression(column.is_(None))
-    assert left == right
-
-
-def test_do_not_coerce_bool_column():
-    left = Expression(~BOOL_A, force_bool=True)
-    right = Expression(~BOOL_A)
-    assert left == right
-
-
-def test_do_not_coerce_negated_bool_column():
-    left = Expression(BOOL_A, force_bool=True)
-    right = Expression(BOOL_A)
-    assert left == right
-
-
-@pytest.mark.parametrize("column", [INT_A, TEXT])
-def test_do_not_coerce_nonbool_expr(column):
-    left = Expression(~column.in_(["foo", "bar"]), force_bool=True)
-    right = Expression(~column.in_(["foo", "bar"]))
-    assert left == right
 
 
 # Boolean expression evaluation

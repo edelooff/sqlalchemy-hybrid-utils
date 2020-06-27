@@ -7,13 +7,13 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapper, mapperlib
 from sqlalchemy.sql.elements import ClauseElement
 
-from .expression import Expression
+from .expression import Expression, rephrase_as_boolean
 from .typing import ColumnDefaults, ColumnValues, MapperTargets
 
 
 class DerivedColumn:
     def __init__(self, expression: ClauseElement, default: Any = None):
-        self.expression = Expression(expression, force_bool=True)
+        self.expression = Expression(expression)
         self.default = default
         self.targets: MapperTargets = {}
         if len(self.expression.columns) > 1 and self.default is not None:
@@ -82,5 +82,6 @@ class DerivedColumn:
 
 
 def column_flag(expression: ClauseElement, **options: Any) -> hybrid_property:
+    expression = rephrase_as_boolean(expression)
     derived = DerivedColumn(expression, **options)
     return derived.create_hybrid()

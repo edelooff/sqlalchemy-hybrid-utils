@@ -45,9 +45,9 @@ class Expression:
     and stored on the `sql` attribute.
     """
 
-    def __init__(self, expression: ClauseElement, force_bool: bool = False):
-        self.sql = rephrase_as_boolean(expression) if force_bool else expression
-        self.serialized = tuple(self._serialize(self.sql))
+    def __init__(self, expression: ClauseElement):
+        self.serialized = tuple(self._serialize(expression))
+        self.sql = expression
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, type(self)):
