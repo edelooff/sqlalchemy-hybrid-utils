@@ -14,9 +14,10 @@ def type(session):
 
 
 @nox.session(python="3.8")
-@nox.parametrize("sqla", ["1.1", "1.2", "1.3"])
-def test(session, sqla):
+@nox.parametrize("sqlalchemy", ["1.0", "1.1", "1.2", "1.3"])
+def test(session, sqlalchemy):
     args = session.posargs or ["--cov"]
-    session.run("poetry", "install", external=True)
-    session.install(f"sqlalchemy=={sqla}")
+    session.install("pytest", "coverage[toml]", "pytest-cov")
+    session.install(f"sqlalchemy=={sqlalchemy}")
+    session.install(".")
     session.run("pytest", *args)
