@@ -14,7 +14,7 @@ def Base():
 
 @pytest.fixture(scope="session")
 def Message(Base):
-    class Message(Base):
+    class Message(Base):  # type: ignore
         __tablename__ = "message"
         id = sa.Column(sa.Integer, primary_key=True)
         content = sa.Column(sa.Text)
@@ -32,7 +32,7 @@ def Message(Base):
 
 @pytest.fixture(scope="session")
 def Booking(Base):
-    class Booking(Base):
+    class Booking(Base):  # type: ignore
         __tablename__ = "booking"
         __mapper_args__ = {"polymorphic_on": "type", "polymorphic_identity": "standard"}
         id = sa.Column(sa.Integer, primary_key=True)
@@ -45,7 +45,7 @@ def Booking(Base):
 
 @pytest.fixture(scope="session")
 def Cancellable(Booking):
-    class CancellableBooking(Booking):
+    class CancellableBooking(Booking):  # type: ignore
         __mapper_args__ = {"polymorphic_identity": "cancellable"}
         cancelled_at = sa.Column(sa.DateTime)
         is_cancelled = column_flag(cancelled_at)
