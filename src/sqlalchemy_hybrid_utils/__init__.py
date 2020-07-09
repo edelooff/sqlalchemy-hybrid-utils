@@ -7,7 +7,11 @@ from .derived_column import DerivedColumn
 from .expression import Expression, rephrase_as_boolean
 
 
-def column_flag(expr: ClauseElement, default: Any = None) -> hybrid_property:
+def column_flag(
+    expr: ClauseElement, default: Any = None, prefetch_attribute_names: bool = True
+) -> hybrid_property:
     expression = Expression(rephrase_as_boolean(expr))
-    derived = DerivedColumn(expression, default=default)
+    derived = DerivedColumn(
+        expression, default=default, prefetch_attribute_names=prefetch_attribute_names
+    )
     return derived.create_hybrid()

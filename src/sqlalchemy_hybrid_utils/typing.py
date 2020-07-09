@@ -1,4 +1,4 @@
-from typing import Any, Dict, Set, TYPE_CHECKING
+from typing import Any, Callable, Dict, Set, Type, TYPE_CHECKING
 
 from sqlalchemy.sql.schema import Column
 
@@ -10,4 +10,7 @@ else:
 ColumnDefaults = Dict[bool, Any]
 ColumnValues = Dict[ColType, Any]
 ColumnSet = Set[ColType]
-MapperTargets = Dict[ColType, str]
+ExpressionEvaluation = Callable[[Any], Any]
+MapperTargets = Dict[Type[Any], Dict[ColType, str]]
+ResolveAttrName = Callable[[Any], str]
+ResolveAttrValues = Callable[[Any], ColumnValues]
