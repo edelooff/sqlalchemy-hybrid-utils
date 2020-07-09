@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import pytest
-from sqlalchemy import Column, Integer
 
 from sqlalchemy_hybrid_utils import column_flag
 
@@ -44,9 +43,9 @@ def test_flag_select_expr(Message, session):
     assert session.query(Message).filter(Message.in_transit).count() == 2
 
 
-def test_multi_column_no_default():
-    col_one = Column("foo", Integer)
-    col_two = Column("bar", Integer)
+def test_multi_column_no_default(Message):
+    col_one = Message.__table__.c.content
+    col_two = Message.__table__.c.sent_at
 
     with pytest.raises(TypeError, match="default for multi-column expression"):
         column_flag(col_one & col_two, default="baz")
