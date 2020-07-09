@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, DateTime, Text, create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
-from sqlalchemy_column_flag import column_flag
+from sqlalchemy_hybrid_utils import column_flag
 
 Base = declarative_base()
 
