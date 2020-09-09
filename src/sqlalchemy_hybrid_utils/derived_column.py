@@ -5,10 +5,7 @@ from typing import Any, Callable
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from .expression import Expression
-from .resolver import (
-    AttributeResolver,
-    PrefetchedAttributeResolver,
-)
+from .resolver import AttributeResolver, PrefetchedAttributeResolver
 from .typing import (
     ColumnDefaults,
     ExpressionEvaluation,

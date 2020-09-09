@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Set, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, Set, Type
 
 from sqlalchemy.sql.schema import Column
 

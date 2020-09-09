@@ -5,11 +5,7 @@ from sqlalchemy.event import listen
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Mapper
 
-from .typing import (
-    ColumnSet,
-    ColumnValues,
-    MapperTargets,
-)
+from .typing import ColumnSet, ColumnValues, MapperTargets
 
 
 class AttributeResolver:

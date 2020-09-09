@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import Table, MetaData, Column, Integer, Text
+from sqlalchemy import Column, Integer, MetaData, Table, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import mapper

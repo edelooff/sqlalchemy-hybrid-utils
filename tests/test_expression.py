@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import Column, Boolean, Integer, Text, func
+from sqlalchemy import Boolean, Column, Integer, Text, func
 
 from sqlalchemy_hybrid_utils.expression import Expression
 
