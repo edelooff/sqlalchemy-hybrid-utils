@@ -3,7 +3,7 @@ import nox
 
 @nox.session(python="3.8")
 def lint(session):
-    session.install("flake8", "flake8-black", "flake8-isort")
+    session.install("flake8", "flake8-black", "flake8-bugbear", "flake8-isort")
     session.run("flake8", *session.posargs)
 
 

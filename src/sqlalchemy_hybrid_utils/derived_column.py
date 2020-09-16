@@ -6,12 +6,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 from .expression import Expression
 from .resolver import AttributeResolver, PrefetchedAttributeResolver
-from .typing import (
-    ColumnDefaults,
-    ExpressionEvaluation,
-    ResolveAttrName,
-    ResolveAttrValues,
-)
+from .typing import ColumnDefaults
 
 
 class DerivedColumn:
@@ -36,27 +31,22 @@ class DerivedColumn:
             setter = lambda: self.default  # noqa
         return {True: setter, False: lambda: None}
 
-    def make_getter(
-        self,
-    ) -> Callable[[Any, ExpressionEvaluation, ResolveAttrValues], Any]:
-        def _fget(
-            self: Any,
-            evaluate: ExpressionEvaluation = self.expression.evaluate,
-            values: ResolveAttrValues = self.resolver.values,
-        ) -> Any:
+    def make_getter(self) -> Callable[[Any], Any]:
+        """Returns a getter function, evaluating the expression in bound scope."""
+        evaluate = self.expression.evaluate
+        values = self.resolver.values
+
+        def _fget(self: Any) -> Any:
             return evaluate(values(self))
 
         return _fget
 
-    def make_setter(
-        self,
-    ) -> Callable[[Any, Any, ResolveAttrName, ColumnDefaults], None]:
-        def _fset(
-            self: Any,
-            value: Any,
-            target_name: ResolveAttrName = self.resolver.single_name,
-            defaults: ColumnDefaults = self._default_functions(),
-        ) -> None:
+    def make_setter(self) -> Callable[[Any, Any], None]:
+        """Returns a setter function setting default values based on given booleans."""
+        defaults = self._default_functions()
+        target_name = self.resolver.single_name
+
+        def _fset(self: Any, value: Any) -> None:
             if not isinstance(value, bool):
                 raise TypeError("Flag only accepts boolean values")
             setattr(self, target_name(self), defaults[value]())
