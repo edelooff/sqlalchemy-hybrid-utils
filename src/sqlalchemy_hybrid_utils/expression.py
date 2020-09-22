@@ -69,6 +69,10 @@ class Expression:
                 stack_push(value)
             elif itype is SymbolType.column:
                 stack_push(column_values[value])
+            elif arity == 1:
+                stack_push(value(stack_pop()))
+            elif arity == 2:
+                stack_push(value(stack_pop(), stack_pop()))
             else:
                 stack_push(value(*(stack_pop() for _ in range(arity))))
         return stack_pop()
