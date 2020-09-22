@@ -61,15 +61,17 @@ class Expression:
 
     def evaluate(self, column_values: ColumnValues) -> Any:
         """Evaluates the SQLAlchemy expression on the current column values."""
-        stack = Stack()
+        stack: Deque[Any] = deque()
+        stack_push = stack.append
+        stack_pop = stack.pop
         for itype, arity, value in self.serialized:
             if itype is SymbolType.literal:
-                stack.push(value)
+                stack_push(value)
             elif itype is SymbolType.column:
-                stack.push(column_values[value])
+                stack_push(column_values[value])
             else:
-                stack.push(value(*stack.popn(arity)))
-        return stack.pop()
+                stack_push(value(*(stack_pop() for _ in range(arity))))
+        return stack_pop()
 
     @property
     def columns(self) -> ColumnSet:
@@ -122,20 +124,6 @@ class Expression:
         else:
             expr_type = type(expr).__name__
             raise TypeError(f"Unsupported expression {expr} of type {expr_type}")
-
-
-class Stack:
-    def __init__(self) -> None:
-        self._stack: Deque[Any] = deque()
-
-    def push(self, frame: Any) -> None:
-        self._stack.append(frame)
-
-    def pop(self) -> Any:
-        return self._stack.pop()
-
-    def popn(self, size: int) -> Iterator[Any]:
-        return (self._stack.pop() for _ in range(size))
 
 
 class Symbol:
