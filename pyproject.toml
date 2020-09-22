@@ -33,6 +33,9 @@ fail_under = 100
 show_missing = true
 exclude_lines = ["# pragma: no cover", "if TYPE_CHECKING:"]
 
+[tool.isort]
+profile = "black"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"

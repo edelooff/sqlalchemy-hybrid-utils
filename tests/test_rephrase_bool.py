@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Boolean, Text
-
 import pytest
+from sqlalchemy import Boolean, Column, Text
 
 from sqlalchemy_hybrid_utils.expression import rephrase_as_boolean
 
