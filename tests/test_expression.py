@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import Boolean, Column, Integer, Text, func
+from sqlalchemy import Boolean, Column, Integer, Text, and_, func, or_
 
 from sqlalchemy_hybrid_utils.expression import Expression
 
@@ -108,6 +108,48 @@ def test_bool_expr_disjunction(inputs, expected):
 def test_bool_expr_mixed(inputs, expected):
     expression = Expression((BOOL_A & ~BOOL_B) | BOOL_C)
     assert expression.evaluate(inputs) == expected
+
+
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        ({BOOL_A: True, BOOL_B: True, BOOL_C: False}, False),
+        ({BOOL_A: True, BOOL_B: False, BOOL_C: True}, False),
+        ({BOOL_A: False, BOOL_B: True, BOOL_C: True}, False),
+        ({BOOL_A: True, BOOL_B: True, BOOL_C: True}, True),
+    ],
+)
+def test_bool_conjunction_clauselists(inputs, expected):
+    expression = Expression(and_(BOOL_A, BOOL_B, BOOL_C))
+    assert expression.evaluate(inputs) == expected
+
+
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        ({BOOL_A: True, BOOL_B: False, BOOL_C: False}, True),
+        ({BOOL_A: False, BOOL_B: True, BOOL_C: False}, True),
+        ({BOOL_A: False, BOOL_B: False, BOOL_C: True}, True),
+        ({BOOL_A: False, BOOL_B: False, BOOL_C: False}, False),
+    ],
+)
+def test_bool_disjunction_clauselists(inputs, expected):
+    expression = Expression(or_(BOOL_A, BOOL_B, BOOL_C))
+    assert expression.evaluate(inputs) == expected
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        pytest.param(and_(), id="empty AND"),
+        pytest.param(and_(and_(), and_()), id="AND of empty AND"),
+        pytest.param(or_(), id="empty OR"),
+        pytest.param(or_(or_(), or_()), id="OR of empty OR"),
+    ],
+)
+def test_bool_empty_clauselists(clause):
+    expression = Expression(clause)
+    assert expression.evaluate({})
 
 
 # Math expression evaluation

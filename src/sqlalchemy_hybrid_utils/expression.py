@@ -21,6 +21,10 @@ from sqlalchemy.sql.sqltypes import Boolean
 
 from .typing import ColumnSet, ColumnValues
 
+BOOLEAN_MULTICLAUSE_OPERATORS = {
+    operator.and_: lambda *args: all(args),
+    operator.or_: lambda *args: any(args),
+}
 OPERATOR_MAP = {
     operators.in_op: lambda left, right: left in right,
     operators.is_: operator.eq,
@@ -103,7 +107,12 @@ class Expression:
         elif isinstance(expr, BooleanClauseList):
             for clause in expr.clauses:
                 yield from self._serialize(clause)
-            yield Symbol(expr.operator, arity=len(expr.clauses))
+            if (arity := len(expr.clauses)) == 0:
+                yield Symbol(True)
+            elif arity == 2:
+                yield Symbol(expr.operator, arity=arity)
+            else:
+                yield Symbol(BOOLEAN_MULTICLAUSE_OPERATORS[expr.operator], arity=arity)
         elif isinstance(expr, BinaryExpression):
             if isinstance(expr.operator, operators.custom_op):
                 raise TypeError(f"Unsupported operator {expr.operator}")
