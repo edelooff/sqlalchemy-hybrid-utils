@@ -105,6 +105,12 @@ class Expression:
             yield from self._serialize(target)
             yield Symbol(expr.operator, arity=1)
         # Multi-clause expressions
+        elif isinstance(expr, BinaryExpression):
+            if isinstance(expr.operator, operators.custom_op):
+                raise TypeError(f"Unsupported operator {expr.operator}")
+            yield from self._serialize(expr.right)
+            yield from self._serialize(expr.left)
+            yield Symbol(OPERATOR_MAP.get(expr.operator, expr.operator), arity=2)
         elif isinstance(expr, BooleanClauseList):
             yield from chain.from_iterable(map(self._serialize, expr.clauses))
             if (arity := len(expr.clauses)) == 0:
@@ -113,12 +119,6 @@ class Expression:
                 yield Symbol(expr.operator, arity=arity)
             else:
                 yield Symbol(BOOLEAN_MULTICLAUSE_OPERATORS[expr.operator], arity=arity)
-        elif isinstance(expr, BinaryExpression):
-            if isinstance(expr.operator, operators.custom_op):
-                raise TypeError(f"Unsupported operator {expr.operator}")
-            yield from self._serialize(expr.right)
-            yield from self._serialize(expr.left)
-            yield Symbol(OPERATOR_MAP.get(expr.operator, expr.operator), arity=2)
         else:
             expr_type = type(expr).__name__
             raise TypeError(f"Unsupported expression {expr} of type {expr_type}")
