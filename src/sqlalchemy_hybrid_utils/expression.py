@@ -3,6 +3,7 @@ from __future__ import annotations
 import operator
 from collections import deque
 from enum import Enum, auto
+from itertools import chain
 from typing import Any, Deque, Iterator, Optional
 
 from sqlalchemy.sql import operators
@@ -105,8 +106,7 @@ class Expression:
             yield Symbol(expr.operator, arity=1)
         # Multi-clause expressions
         elif isinstance(expr, BooleanClauseList):
-            for clause in expr.clauses:
-                yield from self._serialize(clause)
+            yield from chain.from_iterable(map(self._serialize, expr.clauses))
             if (arity := len(expr.clauses)) == 0:
                 yield Symbol(True)
             elif arity == 2:
