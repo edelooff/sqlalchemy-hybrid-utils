@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Type
+from typing import Any, Dict, Type
 
 from sqlalchemy.event import listen
 from sqlalchemy.inspection import inspect
@@ -13,12 +13,16 @@ class AttributeResolver:
 
     def __init__(self, columns: ColumnSet):
         self._columns = columns
+        if len(self._columns) == 1:
+            self._single = next(iter(columns))
 
     def single_name(self, orm_obj: Any) -> str:
         """Returns the first (and only) attribute name for __fset__."""
         mapper = inspect(orm_obj).mapper
-        column = next(iter(self._columns))
-        return mapper.get_property_by_column(column).key
+        try:
+            return mapper.get_property_by_column(self._single).key
+        except AttributeError:
+            raise ValueError("Resolver contains multiple columns.")
 
     def values(self, orm_obj: Any) -> ColumnValues:
         """Returns values of column-attributes for given ORM object."""
@@ -30,6 +34,7 @@ class AttributeResolver:
 class PrefetchedAttributeResolver(AttributeResolver):
     def __init__(self, columns: ColumnSet):
         super().__init__(columns)
+        self._singles: Dict[Type[Any], str] = {}
         self._targets: MapperTargets = defaultdict(dict)
         listen(Mapper, "mapper_configured", self._resolve_mapped_attribute_names)
 
@@ -45,11 +50,16 @@ class PrefetchedAttributeResolver(AttributeResolver):
         for column in self._columns:
             if column in mapper.columns.values():
                 attr = mapper.get_property_by_column(column)
+                if len(self._columns) == 1:
+                    self._singles[mapped_class] = attr.key
                 self._targets[mapped_class][column] = attr.key
 
     def single_name(self, orm_obj: Any) -> str:
         """Returns the first (and only) attribute name for __fset__."""
-        return next(iter(self._targets[type(orm_obj)].values()))
+        try:
+            return self._singles[type(orm_obj)]
+        except KeyError:
+            raise ValueError("Resolver contains multiple columns.")
 
     def values(self, orm_obj: Any) -> ColumnValues:
         targets = self._targets[type(orm_obj)]

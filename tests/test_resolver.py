@@ -75,6 +75,13 @@ def test_single_name_getter(Thing, column_map, make_resolver):
         assert resolver.single_name(thing) == attr_name
 
 
+def test_single_name_multi_column(Thing, column_map, make_resolver):
+    thing = Thing()
+    resolver = make_resolver(set(column_map.values()))
+    with pytest.raises(ValueError, match="Resolver contains multiple columns"):
+        resolver.single_name(thing)
+
+
 def test_ambiguous_attribute_names_across_mappers(make_resolver):
     """Ambiguously mapped column works normally for AttributeResolver."""
     table = Table("test", MetaData(), Column("value", Text, primary_key=True))
