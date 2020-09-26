@@ -68,7 +68,7 @@ class Expression:
             if itype is SymbolType.literal:
                 stack_push(value)
             elif itype is SymbolType.column:
-                stack_push(column_values[value])
+                stack_push(column_values(value))
             elif arity == 1:
                 stack_push(value(stack_pop()))
             elif arity == 2:

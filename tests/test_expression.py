@@ -12,6 +12,11 @@ INT_C = Column("int_c", Integer)
 TEXT = Column("text", Text)
 
 
+def values(mapping):
+    """Returns the getitem operator for the given dictionary."""
+    return mapping.__getitem__
+
+
 # Equality and comparability
 def test_expression_self_equality():
     expr = Expression(BOOL_A & (INT_A > 5))
@@ -53,7 +58,7 @@ def test_serlialize_unsupported_opeator():
 )
 def test_bool_expr_direct_column(inputs, expected):
     expression = Expression(BOOL_A)
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -61,7 +66,7 @@ def test_bool_expr_direct_column(inputs, expected):
 )
 def test_bool_expr_negation(inputs, expected):
     expression = Expression(~BOOL_A)
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -75,7 +80,7 @@ def test_bool_expr_negation(inputs, expected):
 )
 def test_bool_expr_conjunction(inputs, expected):
     expression = Expression(BOOL_A & BOOL_B)
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -89,7 +94,7 @@ def test_bool_expr_conjunction(inputs, expected):
 )
 def test_bool_expr_disjunction(inputs, expected):
     expression = Expression(BOOL_A | BOOL_B)
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -107,7 +112,7 @@ def test_bool_expr_disjunction(inputs, expected):
 )
 def test_bool_expr_mixed(inputs, expected):
     expression = Expression((BOOL_A & ~BOOL_B) | BOOL_C)
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -121,7 +126,7 @@ def test_bool_expr_mixed(inputs, expected):
 )
 def test_bool_conjunction_clauselists(inputs, expected):
     expression = Expression(and_(BOOL_A, BOOL_B, BOOL_C))
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -135,7 +140,7 @@ def test_bool_conjunction_clauselists(inputs, expected):
 )
 def test_bool_disjunction_clauselists(inputs, expected):
     expression = Expression(or_(BOOL_A, BOOL_B, BOOL_C))
-    assert expression.evaluate(inputs) == expected
+    assert expression.evaluate(values(inputs)) == expected
 
 
 @pytest.mark.parametrize(
@@ -149,49 +154,49 @@ def test_bool_disjunction_clauselists(inputs, expected):
 )
 def test_bool_empty_clauselists(clause):
     expression = Expression(clause)
-    assert expression.evaluate({})
+    assert expression.evaluate(values({}))
 
 
 # Math expression evaluation
 def test_addition():
     expr = Expression(INT_A + INT_B)
-    assert expr.evaluate({INT_A: 2, INT_B: -10}) == -8
+    assert expr.evaluate(values({INT_A: 2, INT_B: -10})) == -8
 
 
 def test_subtraction():
     expr = Expression(INT_A - INT_B)
-    assert expr.evaluate({INT_A: 2, INT_B: 5}) == -3
+    assert expr.evaluate(values({INT_A: 2, INT_B: 5})) == -3
 
 
 def test_division():
     expr = Expression(INT_A / INT_B)
-    assert expr.evaluate({INT_A: 4, INT_B: 2}) == 2
+    assert expr.evaluate(values({INT_A: 4, INT_B: 2})) == 2
 
 
 def test_multiplication():
     expr = Expression(INT_A * INT_B)
-    assert expr.evaluate({INT_A: 4, INT_B: -3}) == -12
+    assert expr.evaluate(values({INT_A: 4, INT_B: -3})) == -12
 
 
 def test_bitwise_inversion():
     expr = Expression(~INT_A)
-    assert expr.evaluate({INT_A: 127}) == -128
-    assert expr.evaluate({INT_A: -128}) == 127
+    assert expr.evaluate(values({INT_A: 127})) == -128
+    assert expr.evaluate(values({INT_A: -128})) == 127
 
 
 def test_mixed_math():
     expr = Expression((INT_A * INT_B) + (INT_A / INT_C))
-    assert expr.evaluate({INT_A: 8, INT_B: 2, INT_C: 4}) == 18
+    assert expr.evaluate(values({INT_A: 8, INT_B: 2, INT_C: 4})) == 18
 
 
 # Test additional expression evaluation
 def test_evaluate_bind_param_equals():
     expr = Expression(INT_A == 5)
-    assert not expr.evaluate({INT_A: 4})
-    assert expr.evaluate({INT_A: 5})
+    assert not expr.evaluate(values({INT_A: 4}))
+    assert expr.evaluate(values({INT_A: 5}))
 
 
 def test_evaluate_bind_param_contains():
     expr = Expression(INT_A.in_([1, 2, 3, 4, 5]))
-    assert expr.evaluate({INT_A: 3})
-    assert not expr.evaluate({INT_A: 6})
+    assert expr.evaluate(values({INT_A: 3}))
+    assert not expr.evaluate(values({INT_A: 6}))

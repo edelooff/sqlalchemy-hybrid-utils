@@ -24,7 +24,7 @@ class AttributeResolver:
         """Returns values of column-attributes for given ORM object."""
         mapper = inspect(orm_obj).mapper
         getter = mapper.get_property_by_column
-        return {col: getattr(orm_obj, getter(col).key) for col in self._columns}
+        return lambda col: getattr(orm_obj, getter(col).key)
 
 
 class PrefetchedAttributeResolver(AttributeResolver):
@@ -53,4 +53,4 @@ class PrefetchedAttributeResolver(AttributeResolver):
 
     def values(self, orm_obj: Any) -> ColumnValues:
         targets = self._targets[type(orm_obj)]
-        return {col: getattr(orm_obj, attr) for col, attr in targets.items()}
+        return lambda col: getattr(orm_obj, targets[col])
