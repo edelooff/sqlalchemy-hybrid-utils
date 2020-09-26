@@ -35,11 +35,7 @@ class DerivedColumn:
         """Returns a getter function, evaluating the expression in bound scope."""
         evaluate = self.expression.evaluate
         values = self.resolver.values
-
-        def _fget(self: Any) -> Any:
-            return evaluate(values(self))
-
-        return _fget
+        return lambda orm_obj: evaluate(values(orm_obj))
 
     def make_setter(self) -> Callable[[Any, Any], None]:
         """Returns a setter function setting default values based on given booleans."""
