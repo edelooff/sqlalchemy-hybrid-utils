@@ -3,6 +3,7 @@ from __future__ import annotations
 import operator
 from collections import deque
 from enum import Enum, auto
+from itertools import chain
 from typing import Any, Deque, Iterator, Optional
 
 from sqlalchemy.sql import operators
@@ -21,6 +22,10 @@ from sqlalchemy.sql.sqltypes import Boolean
 
 from .typing import ColumnSet, ColumnValues
 
+BOOLEAN_MULTICLAUSE_OPERATORS = {
+    operator.and_: lambda *args: all(args),
+    operator.or_: lambda *args: any(args),
+}
 OPERATOR_MAP = {
     operators.in_op: lambda left, right: left in right,
     operators.is_: operator.eq,
@@ -56,15 +61,21 @@ class Expression:
 
     def evaluate(self, column_values: ColumnValues) -> Any:
         """Evaluates the SQLAlchemy expression on the current column values."""
-        stack = Stack()
+        stack: Deque[Any] = deque()
+        stack_push = stack.append
+        stack_pop = stack.pop
         for itype, arity, value in self.serialized:
             if itype is SymbolType.literal:
-                stack.push(value)
+                stack_push(value)
             elif itype is SymbolType.column:
-                stack.push(column_values[value])
+                stack_push(column_values(value))
+            elif arity == 1:
+                stack_push(value(stack_pop()))
+            elif arity == 2:
+                stack_push(value(stack_pop(), stack_pop()))
             else:
-                stack.push(value(*stack.popn(arity)))
-        return stack.pop()
+                stack_push(value(*(stack_pop() for _ in range(arity))))
+        return stack_pop()
 
     @property
     def columns(self) -> ColumnSet:
@@ -100,33 +111,23 @@ class Expression:
             yield from self._serialize(target)
             yield Symbol(expr.operator, arity=1)
         # Multi-clause expressions
-        elif isinstance(expr, BooleanClauseList):
-            for clause in expr.clauses:
-                yield from self._serialize(clause)
-            yield Symbol(expr.operator, arity=len(expr.clauses))
         elif isinstance(expr, BinaryExpression):
             if isinstance(expr.operator, operators.custom_op):
                 raise TypeError(f"Unsupported operator {expr.operator}")
             yield from self._serialize(expr.right)
             yield from self._serialize(expr.left)
             yield Symbol(OPERATOR_MAP.get(expr.operator, expr.operator), arity=2)
+        elif isinstance(expr, BooleanClauseList):
+            yield from chain.from_iterable(map(self._serialize, expr.clauses))
+            if (arity := len(expr.clauses)) == 0:
+                yield Symbol(True)
+            elif arity == 2:
+                yield Symbol(expr.operator, arity=arity)
+            else:
+                yield Symbol(BOOLEAN_MULTICLAUSE_OPERATORS[expr.operator], arity=arity)
         else:
             expr_type = type(expr).__name__
             raise TypeError(f"Unsupported expression {expr} of type {expr_type}")
-
-
-class Stack:
-    def __init__(self) -> None:
-        self._stack: Deque[Any] = deque()
-
-    def push(self, frame: Any) -> None:
-        self._stack.append(frame)
-
-    def pop(self) -> Any:
-        return self._stack.pop()
-
-    def popn(self, size: int) -> Iterator[Any]:
-        return (self._stack.pop() for _ in range(size))
 
 
 class Symbol:

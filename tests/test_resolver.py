@@ -63,9 +63,9 @@ def make_resolver(Thing, resolver_type):
 def test_resolve_simple_values(Thing, column_map, make_resolver, params):
     thing = Thing(**params)
     resolver = make_resolver(column_map.values())
-    resolved_values = resolver.values(thing)
+    value_resolver = resolver.values(thing)
     for attr_name, column in column_map.items():
-        assert getattr(thing, attr_name) == resolved_values[column]
+        assert getattr(thing, attr_name) == value_resolver(column)
 
 
 def test_single_name_getter(Thing, column_map, make_resolver):
@@ -73,6 +73,13 @@ def test_single_name_getter(Thing, column_map, make_resolver):
     for attr_name, column in column_map.items():
         resolver = make_resolver({column})
         assert resolver.single_name(thing) == attr_name
+
+
+def test_single_name_multi_column(Thing, column_map, make_resolver):
+    thing = Thing()
+    resolver = make_resolver(set(column_map.values()))
+    with pytest.raises(ValueError, match="Resolver contains multiple columns"):
+        resolver.single_name(thing)
 
 
 def test_ambiguous_attribute_names_across_mappers(make_resolver):
@@ -94,8 +101,8 @@ def test_ambiguous_attribute_names_across_mappers(make_resolver):
     alias = Alias("eggs")
     assert resolver.single_name(base) == "value"
     assert resolver.single_name(alias) == "alias"
-    assert resolver.values(base) == {table.c.value: "spam"}
-    assert resolver.values(alias) == {table.c.value: "eggs"}
+    assert resolver.values(base)(table.c.value) == "spam"
+    assert resolver.values(alias)(table.c.value) == "eggs"
 
 
 @pytest.mark.parametrize("prefetch", [False, True])
