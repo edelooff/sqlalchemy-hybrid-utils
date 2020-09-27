@@ -27,6 +27,7 @@ source = ["src"]
 [tool.coverage.run]
 branch = true
 source = ["sqlalchemy_hybrid_utils"]
+omit = ["*/sqlalchemy_hybrid_utils/compat.py"]
 
 [tool.coverage.report]
 fail_under = 100

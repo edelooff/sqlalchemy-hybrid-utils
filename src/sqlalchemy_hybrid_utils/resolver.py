@@ -5,6 +5,7 @@ from sqlalchemy.event import listen
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Mapper
 
+from .compat import column_presence_checker
 from .typing import ColumnSet, ColumnValues, MapperTargets
 
 
@@ -47,8 +48,9 @@ class PrefetchedAttributeResolver(AttributeResolver):
         mapped class. This allows multiple mapped classes against the same
         table to have different attribute names to refer to a column.
         """
+        column_present = column_presence_checker(mapper.columns)
         for column in self._columns:
-            if column in mapper.columns.values():
+            if column_present(column):
                 attr = mapper.get_property_by_column(column)
                 if len(self._columns) == 1:
                     self._singles[mapped_class] = attr.key
