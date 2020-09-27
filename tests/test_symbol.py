@@ -3,6 +3,7 @@ from sqlalchemy import Boolean, Column
 
 from sqlalchemy_hybrid_utils.expression import (
     ColumnSymbol,
+    GroupingSymbol,
     LiteralSymbol,
     OperatorSymbol,
 )
@@ -37,6 +38,11 @@ def test_symbol_other_type_inequality(other):
 def test_symbol_column_must_be_column():
     with pytest.raises(TypeError, match="Value must be column-like:"):
         ColumnSymbol("foo")  # type: ignore[arg-type]
+
+
+def test_symbol_grouping_arity_must_be_integer():
+    with pytest.raises(TypeError, match="Arity must be an integer:"):
+        GroupingSymbol("1")  # type: ignore[arg-type]
 
 
 def test_symbol_operator_must_be_callable():

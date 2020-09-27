@@ -13,6 +13,7 @@ from sqlalchemy.sql.elements import (
     BindParameter,
     BooleanClauseList,
     ClauseElement,
+    ClauseList,
     Grouping,
     Null,
     UnaryExpression,
@@ -77,6 +78,8 @@ class Expression:
                     stack_push(symbol.operator(stack_pop(), stack_pop()))
                 else:
                     stack_push(symbol.operator(*(stack_pop() for _ in range(arity))))
+            elif isinstance(symbol, GroupingSymbol):
+                stack_push([stack_pop() for _ in range(symbol.arity)])
             else:
                 raise RuntimeError(f"Bad Symbol type {symbol}")  # pragma: no cover
         return stack_pop()
@@ -98,9 +101,9 @@ class Expression:
         # Simple and direct value types
         if isinstance(expr, BindParameter):
             yield LiteralSymbol(expr.value)
-        elif isinstance(expr, Grouping):
-            value = [elem.value for elem in expr.element]  # type: ignore[attr-defined]
-            yield LiteralSymbol(value)
+        elif isinstance(expr, Grouping) and isinstance(expr.element, ClauseList):
+            yield from chain.from_iterable(map(self._serialize, expr.element))
+            yield GroupingSymbol(len(expr.element))
         elif isinstance(expr, Null):
             yield LiteralSymbol(None)
         # Columns and column-wrapping functions
@@ -147,6 +150,15 @@ class ColumnSymbol(Symbol):
     def __post_init__(self) -> None:
         if not isinstance(self.column, Column):
             raise TypeError(f"Value must be column-like: {self.column}")
+
+
+@dataclass(frozen=True)
+class GroupingSymbol(Symbol):
+    arity: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.arity, int):
+            raise TypeError(f"Arity must be an integer: {self.arity}")
 
 
 @dataclass(frozen=True)

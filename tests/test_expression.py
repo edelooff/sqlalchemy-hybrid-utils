@@ -200,3 +200,17 @@ def test_evaluate_bind_param_contains():
     expr = Expression(INT_A.in_([1, 2, 3, 4, 5]))
     assert expr.evaluate(values({INT_A: 3}))
     assert not expr.evaluate(values({INT_A: 6}))
+
+
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        ({INT_A: 4, INT_B: 1, INT_C: 1}, False),
+        ({INT_A: 4, INT_B: 2, INT_C: 2}, True),
+        ({INT_A: 4, INT_B: 3, INT_C: 3}, False),
+        ({INT_A: 4, INT_B: 4, INT_C: 4}, True),
+    ],
+)
+def test_evaluate_grouping(inputs, expected):
+    expr = Expression(INT_A.in_([INT_B, INT_C * 2]))
+    assert expr.evaluate(values(inputs)) == expected
