@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import operator
 from collections import deque
-from enum import Enum, auto
+from dataclasses import dataclass
 from itertools import chain
-from typing import Any, Deque, Iterator, Optional
+from typing import Any, Deque, Iterator, Set
 
 from sqlalchemy.sql import operators
 from sqlalchemy.sql.elements import (
@@ -20,17 +20,17 @@ from sqlalchemy.sql.elements import (
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import Boolean
 
-from .typing import ColumnSet, ColumnValues
+from .typing import ColType, ColumnSet, ColumnValues, Function, FunctionMap
 
-BOOLEAN_MULTICLAUSE_OPERATORS = {
+BOOLEAN_MULTICLAUSE_OPERATORS: FunctionMap = {
     operator.and_: lambda *args: all(args),
     operator.or_: lambda *args: any(args),
 }
-OPERATOR_MAP = {
+NIL_OPERATORS: Set[Function] = {operators.istrue}
+OPERATOR_MAP: FunctionMap = {
     operators.in_op: lambda left, right: left in right,
     operators.is_: operator.eq,
     operators.isnot: operator.ne,
-    operators.istrue: None,
     operators.isfalse: operator.not_,
 }
 
@@ -64,24 +64,28 @@ class Expression:
         stack: Deque[Any] = deque()
         stack_push = stack.append
         stack_pop = stack.pop
-        for itype, arity, value in self.serialized:
-            if itype is SymbolType.literal:
-                stack_push(value)
-            elif itype is SymbolType.column:
-                stack_push(column_values(value))
-            elif arity == 1:
-                stack_push(value(stack_pop()))
-            elif arity == 2:
-                stack_push(value(stack_pop(), stack_pop()))
+        for symbol in self.serialized:
+            if isinstance(symbol, LiteralSymbol):
+                stack_push(symbol.value)
+            elif isinstance(symbol, ColumnSymbol):
+                stack_push(column_values(symbol.column))
+            elif isinstance(symbol, OperatorSymbol):
+                arity = symbol.arity
+                if arity == 1:
+                    stack_push(symbol.operator(stack_pop()))
+                elif arity == 2:
+                    stack_push(symbol.operator(stack_pop(), stack_pop()))
+                else:
+                    stack_push(symbol.operator(*(stack_pop() for _ in range(arity))))
             else:
-                stack_push(value(*(stack_pop() for _ in range(arity))))
+                raise RuntimeError(f"Bad Symbol type {symbol}")  # pragma: no cover
         return stack_pop()
 
     @property
     def columns(self) -> ColumnSet:
         """Returns a set of columns used in the expression."""
-        coltype = SymbolType.column
-        return {symbol.value for symbol in self.serialized if symbol.type is coltype}
+        symbols = self.serialized
+        return {symbol.column for symbol in symbols if isinstance(symbol, ColumnSymbol)}
 
     def _serialize(self, expr: ClauseElement) -> Iterator[Symbol]:
         """Serializes an SQLAlchemy expression to Python functions.
@@ -93,85 +97,73 @@ class Expression:
         """
         # Simple and direct value types
         if isinstance(expr, BindParameter):
-            yield Symbol(expr.value)
+            yield LiteralSymbol(expr.value)
         elif isinstance(expr, Grouping):
             value = [elem.value for elem in expr.element]  # type: ignore[attr-defined]
-            yield Symbol(value)
+            yield LiteralSymbol(value)
         elif isinstance(expr, Null):
-            yield Symbol(None)
+            yield LiteralSymbol(None)
         # Columns and column-wrapping functions
         elif isinstance(expr, Column):
-            yield Symbol(expr)
+            yield ColumnSymbol(expr)
         elif isinstance(expr, AsBoolean):
-            yield Symbol(expr.element)
-            if (func := OPERATOR_MAP[expr.operator]) is not None:
-                yield Symbol(func, arity=1)
+            yield ColumnSymbol(expr.element)
+            if expr.operator not in NIL_OPERATORS:
+                yield OperatorSymbol(OPERATOR_MAP[expr.operator], arity=1)
         elif isinstance(expr, UnaryExpression):
             target = expr.element
             yield from self._serialize(target)
-            yield Symbol(expr.operator, arity=1)
+            yield OperatorSymbol(expr.operator, arity=1)
         # Multi-clause expressions
         elif isinstance(expr, BinaryExpression):
             if isinstance(expr.operator, operators.custom_op):
                 raise TypeError(f"Unsupported operator {expr.operator}")
             yield from self._serialize(expr.right)
             yield from self._serialize(expr.left)
-            yield Symbol(OPERATOR_MAP.get(expr.operator, expr.operator), arity=2)
+            operator = OPERATOR_MAP.get(expr.operator, expr.operator)
+            yield OperatorSymbol(operator, arity=2)
         elif isinstance(expr, BooleanClauseList):
             yield from chain.from_iterable(map(self._serialize, expr.clauses))
             if (arity := len(expr.clauses)) == 0:
-                yield Symbol(True)
+                yield LiteralSymbol(True)
             elif arity == 2:
-                yield Symbol(expr.operator, arity=arity)
+                yield OperatorSymbol(expr.operator, arity=arity)
             else:
-                yield Symbol(BOOLEAN_MULTICLAUSE_OPERATORS[expr.operator], arity=arity)
+                operator = BOOLEAN_MULTICLAUSE_OPERATORS[expr.operator]
+                yield OperatorSymbol(operator, arity)
         else:
             expr_type = type(expr).__name__
             raise TypeError(f"Unsupported expression {expr} of type {expr_type}")
 
 
 class Symbol:
-    __slots__ = "value", "type", "arity"
-
-    def __init__(self, value: Any, *, arity: Optional[int] = None):
-        self.value = value
-        self.type = self._determine_type(value)
-        self.arity = arity
-        if self.type is SymbolType.operator:
-            if self.arity is None:
-                raise ValueError(f"Arity required for Symbol of type {self.type}.")
-        elif self.arity is not None:
-            raise ValueError(f"Arity not allowed for non-operator type {self.type}.")
-
-    def _determine_type(self, value: Any) -> SymbolType:
-        if isinstance(value, Column):
-            return SymbolType.column
-        if callable(value):
-            return SymbolType.operator
-        return SymbolType.literal
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return tuple(self) == tuple(other)
-
-    def __iter__(self) -> Iterator[Any]:
-        yield from (self.type, self.arity, self.value)
-
-    def __repr__(self) -> str:
-        params = [f"type={self.type!r}", f"value={self.value!r}"]
-        if self.arity is not None:
-            params.append(f"arity={self.arity!r}")
-        return f"<Symbol({', '.join(params)})"
+    """Base class for Symbols created and used by the Expression class."""
 
 
-class SymbolType(Enum):
-    column = auto()
-    literal = auto()
-    operator = auto()
+@dataclass(frozen=True)
+class ColumnSymbol(Symbol):
+    column: ColType
 
-    def __repr__(self) -> str:
-        return f"<{self.name}>"
+    def __post_init__(self) -> None:
+        if not isinstance(self.column, Column):
+            raise TypeError(f"Value must be column-like: {self.column}")
+
+
+@dataclass(frozen=True)
+class LiteralSymbol(Symbol):
+    value: Any
+
+
+@dataclass(frozen=True)
+class OperatorSymbol(Symbol):
+    operator: Function
+    arity: int
+
+    def __post_init__(self) -> None:
+        if not callable(self.operator):
+            raise TypeError(f"Operator must be callable: {self.operator}")
+        if not isinstance(self.arity, int):
+            raise TypeError(f"Arity must be an integer: {self.arity}")
 
 
 def rephrase_as_boolean(expr: ClauseElement) -> ClauseElement:
