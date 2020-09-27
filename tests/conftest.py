@@ -54,7 +54,7 @@ def Cancellable(Booking):
 
 
 @pytest.fixture(scope="session")
-def engine(Base, Message, Booking, Cancellable):
+def engine(Base):
     """Sets up an SQLite databae engine and configures required tables."""
     engine = sa.create_engine("sqlite://", echo=True)
     Base.metadata.create_all(bind=engine)
@@ -66,6 +66,6 @@ def engine(Base, Message, Booking, Cancellable):
 def session(engine):
     """Returns a session with a transaction that is rolled back after test."""
     with engine.connect() as connection:
-        with connection.begin() as transaction:
-            yield sa.orm.Session(bind=connection)
-            transaction.rollback()
+        transaction = connection.begin()
+        yield sa.orm.Session(bind=connection)
+        transaction.rollback()
