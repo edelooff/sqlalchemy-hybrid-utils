@@ -11,7 +11,7 @@ from sqlalchemy_hybrid_utils.resolver import (
 )
 
 try:
-    from sqlalchemy.orm import registry
+    from sqlalchemy.orm import registry  # type: ignore[attr-defined]
 except ImportError:
     registry = None
 
