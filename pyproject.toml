@@ -1,23 +1,22 @@
 [tool.poetry]
 name = "sqlalchemy-hybrid-utils"
-version = "0.1.0"
+version = "0.2.0"
 description = "Extensions to make SQLAlchemy hybrid properties even more powerful."
 authors = ["Elmer de Looff <elmer.delooff@gmail.com>"]
 license = "BSD-2-Clause"
 keywords= ["SQLAlchemy", "hybrid_property"]
-repository = "https://github.com/edelooff/sqlalchemy-column-flag"
+repository = "https://github.com/edelooff/sqlalchemy-hybrid-utils"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-sqlalchemy = ">=1.0"
+sqlalchemy = ">=1.3"
 
 [tool.poetry.dev-dependencies]
 black = { version = "*", allow-prereleases = true }
 pytest = "*"
 flake8 = "*"
 mypy = "*"
-sqlalchemy-stubs = "*"
-coverage = { version = "*", extras = ["toml"] }
+coverage = "*"
 pytest-cov = "*"
 nox = "*"
 
@@ -38,6 +37,5 @@ exclude_lines = ["# pragma: no cover", "if TYPE_CHECKING:"]
 profile = "black"
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
-
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
