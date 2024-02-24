@@ -10,6 +10,18 @@ from sqlalchemy_hybrid_utils.resolver import (
     PrefetchedAttributeResolver,
 )
 
+try:
+    from sqlalchemy.orm import registry
+except ImportError:
+    registry = None
+
+
+def map_class_imperatively(*args, **kwargs):
+    if registry is None:  # SQLAlchemy 1.3 compatibility
+        mapper(*args, **kwargs)
+    else:
+        registry().map_imperatively(*args, **kwargs)
+
 
 @pytest.fixture
 def Thing():
@@ -95,8 +107,8 @@ def test_ambiguous_attribute_names_across_mappers(make_resolver):
             self.alias = value
 
     resolver = make_resolver({table.c.value})
-    mapper(Base, table)
-    mapper(Alias, table, properties={"alias": table.c.value})
+    map_class_imperatively(Base, table)
+    map_class_imperatively(Alias, table, properties={"alias": table.c.value})
     base = Base("spam")
     alias = Alias("eggs")
     assert resolver.single_name(base) == "value"
