@@ -2,9 +2,14 @@ from datetime import datetime
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_hybrid_utils import column_flag
+
+try:
+    # Prioritize import path from SQLAlchemy 2.0
+    from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
+except ImportError:
+    from sqlalchemy.ext.declarative import declarative_base
 
 
 @pytest.fixture(scope="session")

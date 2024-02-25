@@ -1,6 +1,5 @@
 import pytest
 from sqlalchemy import Column, Integer, MetaData, Table, Text
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import mapper
 
@@ -9,6 +8,12 @@ from sqlalchemy_hybrid_utils.resolver import (
     AttributeResolver,
     PrefetchedAttributeResolver,
 )
+
+try:
+    # Prioritize import path from SQLAlchemy 2.0
+    from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
+except ImportError:
+    from sqlalchemy.ext.declarative import declarative_base
 
 try:
     from sqlalchemy.orm import registry  # type: ignore[attr-defined]
