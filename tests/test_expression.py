@@ -144,17 +144,18 @@ def test_bool_disjunction_clauselists(inputs, expected):
 
 
 @pytest.mark.parametrize(
-    "clause",
+    "clause_wrapper",
     [
-        pytest.param(and_(), id="empty AND"),
-        pytest.param(and_(and_(), and_()), id="AND of empty AND"),
-        pytest.param(or_(), id="empty OR"),
-        pytest.param(or_(or_(), or_()), id="OR of empty OR"),
+        pytest.param(lambda: and_(), id="empty AND"),
+        pytest.param(lambda: and_(and_(), and_()), id="AND of empty AND"),
+        pytest.param(lambda: or_(), id="empty OR"),
+        pytest.param(lambda: or_(or_(), or_()), id="OR of empty OR"),
     ],
 )
-def test_bool_empty_clauselists(clause):
-    expression = Expression(clause)
-    assert expression.evaluate(values({}))
+@pytest.mark.filterwarnings("ignore::sqlalchemy.exc.SADeprecationWarning")
+def test_bool_empty_clauselists(clause_wrapper):
+    expression = Expression(clause_wrapper())
+    assert expression.evaluate(values({})) is True
 
 
 # Math expression evaluation
