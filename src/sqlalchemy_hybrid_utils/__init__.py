@@ -6,6 +6,8 @@ from sqlalchemy.sql.elements import ClauseElement
 from .derived_column import DerivedColumn
 from .expression import Expression, rephrase_as_boolean
 
+__version__ = "0.2.0"
+
 
 def column_flag(
     expr: ClauseElement, default: Any = None, prefetch_attribute_names: bool = True

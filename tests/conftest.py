@@ -2,9 +2,14 @@ from datetime import datetime
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_hybrid_utils import column_flag
+
+try:
+    # Prioritize import path from SQLAlchemy 2.0
+    from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
+except ImportError:
+    from sqlalchemy.ext.declarative import declarative_base
 
 
 @pytest.fixture(scope="session")
@@ -54,7 +59,7 @@ def Cancellable(Booking):
 
 
 @pytest.fixture(scope="session")
-def engine(Base, Message, Booking, Cancellable):
+def engine(Base):
     """Sets up an SQLite databae engine and configures required tables."""
     engine = sa.create_engine("sqlite://", echo=True)
     Base.metadata.create_all(bind=engine)
@@ -66,6 +71,6 @@ def engine(Base, Message, Booking, Cancellable):
 def session(engine):
     """Returns a session with a transaction that is rolled back after test."""
     with engine.connect() as connection:
-        with connection.begin() as transaction:
-            yield sa.orm.Session(bind=connection)
-            transaction.rollback()
+        transaction = connection.begin()
+        yield sa.orm.Session(bind=connection)
+        transaction.rollback()
