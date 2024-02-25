@@ -1,0 +1,36 @@
+name: Integration
+on: [push]
+jobs:
+  style:
+    name: Style and type-hint checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+      - name: Install dependencies
+        run: pip install . nox
+      - name: Run style checks
+        run: nox -s lint
+      - name: Run type checks
+        run: nox -s type
+
+  tests:
+    name: Tests on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "pypy-3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install . nox
+      - name: Run test suite
+        run: nox -s test
