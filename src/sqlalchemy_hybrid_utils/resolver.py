@@ -6,7 +6,7 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Mapper
 
 from .compat import column_presence_checker
-from .typing import ColumnSet, ColumnValues, MapperTargets
+from .typing import ColumnSet, ColumnValues, MapperTargets, MapperType
 
 
 class AttributeResolver:
@@ -40,7 +40,7 @@ class PrefetchedAttributeResolver(AttributeResolver):
         listen(Mapper, "mapper_configured", self._resolve_mapped_attribute_names)
 
     def _resolve_mapped_attribute_names(
-        self, mapper: Mapper, mapped_class: Type[Any]
+        self, mapper: MapperType, mapped_class: Type[Any]
     ) -> None:
         """Looks up attribute name on the mapped class for each tracked column.
 

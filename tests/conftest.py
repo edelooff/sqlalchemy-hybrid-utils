@@ -7,7 +7,7 @@ from sqlalchemy_hybrid_utils import column_flag
 
 try:
     # Prioritize import path from SQLAlchemy 2.0
-    from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
+    from sqlalchemy.orm import declarative_base
 except ImportError:
     from sqlalchemy.ext.declarative import declarative_base
 
@@ -29,7 +29,9 @@ def Message(Base):
         has_content = column_flag(content)
         is_sent = column_flag(sent_at, default=sa.func.now())
         is_sent_scalar = column_flag(sent_at, default=datetime(2020, 1, 1))
-        is_delivered = column_flag(delivered_at, default=datetime.utcnow)
+        # SQLAlchemy is "smart" and translates datetime.utcnow to an internal structure
+        # which makes freezing time and predicting the time impossible
+        is_delivered = column_flag(delivered_at, default=lambda: datetime.utcnow())
         in_transit = column_flag(sent_at & ~delivered_at)
 
     return Message

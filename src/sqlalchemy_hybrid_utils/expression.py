@@ -14,6 +14,7 @@ from sqlalchemy.sql.elements import (
     BooleanClauseList,
     ClauseElement,
     ClauseList,
+    ColumnElement,
     Grouping,
     Null,
     UnaryExpression,
@@ -21,7 +22,7 @@ from sqlalchemy.sql.elements import (
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.sqltypes import Boolean
 
-from .typing import ColType, ColumnSet, ColumnValues, Function, FunctionMap
+from .typing import ColumnSet, ColumnValues, Function, FunctionMap
 
 BOOLEAN_MULTICLAUSE_OPERATORS: FunctionMap = {
     operator.and_: lambda *args: all(args),
@@ -51,7 +52,7 @@ class Expression:
     and stored on the `sql` attribute.
     """
 
-    def __init__(self, expression: ClauseElement):
+    def __init__(self, expression: ColumnElement[Any]):
         self.serialized = tuple(self._serialize(expression))
         self.sql = expression
 
@@ -110,12 +111,12 @@ class Expression:
         elif isinstance(expr, Column):
             yield ColumnSymbol(expr)
         elif isinstance(expr, AsBoolean):
-            yield ColumnSymbol(expr.element)
-            if expr.operator not in NIL_OPERATORS:
+            yield from self._serialize(expr.element)
+            if expr.operator is not None and expr.operator not in NIL_OPERATORS:
                 yield OperatorSymbol(OPERATOR_MAP[expr.operator], arity=1)
         elif isinstance(expr, UnaryExpression):
-            target = expr.element
-            yield from self._serialize(target)
+            yield from self._serialize(expr.element)
+            assert expr.operator is not None  # TODO: Find breaking case for this
             yield OperatorSymbol(expr.operator, arity=1)
         # Multi-clause expressions
         elif isinstance(expr, BinaryExpression):
@@ -145,7 +146,7 @@ class Symbol:
 
 @dataclass(frozen=True)
 class ColumnSymbol(Symbol):
-    column: ColType
+    column: Column[Any]
 
     def __post_init__(self) -> None:
         if not isinstance(self.column, Column):
@@ -178,7 +179,7 @@ class OperatorSymbol(Symbol):
             raise TypeError(f"Arity must be an integer: {self.arity}")
 
 
-def rephrase_as_boolean(expr: ClauseElement) -> ClauseElement:
+def rephrase_as_boolean(expr: ColumnElement[Any]) -> ColumnElement[bool]:
     """Rephrases SQL expression allowing boolean usage of non-bool columns.
 
     This is done by converting bare non-Boolean columns (those not used in
@@ -192,6 +193,6 @@ def rephrase_as_boolean(expr: ClauseElement) -> ClauseElement:
             return expr.element.is_(None)
         return expr
     elif isinstance(expr, BooleanClauseList):
-        expr.clauses = list(map(rephrase_as_boolean, expr.clauses))
+        expr.clauses = tuple(map(rephrase_as_boolean, expr.clauses))
         return expr
     return expr

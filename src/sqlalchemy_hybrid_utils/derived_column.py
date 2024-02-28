@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from .expression import Expression
 from .resolver import AttributeResolver, PrefetchedAttributeResolver
-from .typing import ColumnDefaults
+from .typing import (
+    ColumnDefaults,
+    HybridGetterType,
+    HybridPropertyType,
+    HybridSetterType,
+)
 
 
 class DerivedColumn:
@@ -31,13 +36,13 @@ class DerivedColumn:
             setter = lambda: self.default  # noqa
         return {True: setter, False: lambda: None}
 
-    def make_getter(self) -> Callable[[Any], Any]:
+    def make_getter(self) -> HybridGetterType[bool]:
         """Returns a getter function, evaluating the expression in bound scope."""
         evaluate = self.expression.evaluate
         values = self.resolver.values
         return lambda orm_obj: evaluate(values(orm_obj))
 
-    def make_setter(self) -> Callable[[Any, Any], None]:
+    def make_setter(self) -> HybridSetterType[bool]:
         """Returns a setter function setting default values based on given booleans."""
         defaults = self._default_functions()
         target_name = self.resolver.single_name
@@ -49,7 +54,7 @@ class DerivedColumn:
 
         return _fset
 
-    def create_hybrid(self) -> hybrid_property:
+    def create_hybrid(self) -> HybridPropertyType:
         return hybrid_property(
             fget=self.make_getter(),
             fset=self.make_setter() if self.default is not None else None,

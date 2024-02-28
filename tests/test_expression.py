@@ -58,15 +58,21 @@ def test_serlialize_unsupported_opeator():
 )
 def test_bool_expr_direct_column(inputs, expected):
     expression = Expression(BOOL_A)
-    assert expression.evaluate(values(inputs)) == expected
+    assert expression.evaluate(values(inputs)) is expected
 
 
 @pytest.mark.parametrize(
-    "inputs, expected", [({BOOL_A: False}, True), ({BOOL_A: True}, False)]
+    "column_expression, inputs, expected",
+    [
+        pytest.param(~BOOL_A, {BOOL_A: False}, True, id="single negation: False"),
+        pytest.param(~BOOL_A, {BOOL_A: True}, False, id="single negation: True"),
+        pytest.param(~~BOOL_A, {BOOL_A: False}, False, id="double negation: False"),
+        pytest.param(~~BOOL_A, {BOOL_A: True}, True, id="double negation: True"),
+    ],
 )
-def test_bool_expr_negation(inputs, expected):
-    expression = Expression(~BOOL_A)
-    assert expression.evaluate(values(inputs)) == expected
+def test_bool_expr_negation(column_expression, inputs, expected):
+    expression = Expression(column_expression)
+    assert expression.evaluate(values(inputs)) is expected
 
 
 @pytest.mark.parametrize(
@@ -146,10 +152,16 @@ def test_bool_disjunction_clauselists(inputs, expected):
 @pytest.mark.parametrize(
     "clause_wrapper",
     [
-        pytest.param(lambda: and_(), id="empty AND"),
-        pytest.param(lambda: and_(and_(), and_()), id="AND of empty AND"),
-        pytest.param(lambda: or_(), id="empty OR"),
-        pytest.param(lambda: or_(or_(), or_()), id="OR of empty OR"),
+        pytest.param(lambda: and_(), id="empty AND"),  # type: ignore[call-arg]
+        pytest.param(
+            lambda: and_(and_(), and_()),  # type: ignore[call-arg]
+            id="AND of empty AND",
+        ),
+        pytest.param(lambda: or_(), id="empty OR"),  # type: ignore[call-arg]
+        pytest.param(
+            lambda: or_(or_(), or_()),  # type: ignore[call-arg]
+            id="OR of empty OR",
+        ),
     ],
 )
 @pytest.mark.filterwarnings("ignore::sqlalchemy.exc.SADeprecationWarning")

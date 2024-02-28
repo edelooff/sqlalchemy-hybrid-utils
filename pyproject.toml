@@ -20,6 +20,9 @@ coverage = "*"
 pytest-cov = "*"
 nox = "*"
 
+[tool.poetry.group.dev.dependencies]
+freezegun = "^1.4.0"
+
 [tool.coverage.paths]
 source = ["src"]
 
@@ -31,7 +34,7 @@ omit = ["*/sqlalchemy_hybrid_utils/compat.py"]
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
-exclude_lines = ["# pragma: no cover", "if TYPE_CHECKING:"]
+exclude_lines = ["# pragma: no cover", "if TYPE_CHECKING:", "except ImportError:"]
 
 [tool.isort]
 profile = "black"
