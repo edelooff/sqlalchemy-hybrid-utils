@@ -1,7 +1,6 @@
 import pytest
 from sqlalchemy import Column, Integer, MetaData, Table, Text
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import mapper
 
 from sqlalchemy_hybrid_utils import column_flag
 from sqlalchemy_hybrid_utils.resolver import (
@@ -9,23 +8,18 @@ from sqlalchemy_hybrid_utils.resolver import (
     PrefetchedAttributeResolver,
 )
 
-try:
-    # Prioritize import path from SQLAlchemy 2.0
-    from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
-except ImportError:
-    from sqlalchemy.ext.declarative import declarative_base
+try:  # Try modern SQLAlchemy 1.4 / 2.0 first
+    from sqlalchemy.orm import declarative_base, registry
 
-try:
-    from sqlalchemy.orm import registry  # type: ignore[attr-defined]
-except ImportError:
-    registry = None
-
-
-def map_class_imperatively(*args, **kwargs):
-    if registry is None:  # SQLAlchemy 1.3 compatibility
-        mapper(*args, **kwargs)
-    else:
+    def map_class_imperatively(*args, **kwargs):
         registry().map_imperatively(*args, **kwargs)
+
+except ImportError:  # We're on SQLAlchemy 1.3
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import mapper
+
+    def map_class_imperatively(*args, **kwargs):
+        mapper(*args, **kwargs)
 
 
 @pytest.fixture

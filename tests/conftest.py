@@ -7,7 +7,7 @@ from sqlalchemy_hybrid_utils import column_flag
 
 try:
     # Prioritize import path from SQLAlchemy 2.0
-    from sqlalchemy.orm import declarative_base  # type: ignore[attr-defined]
+    from sqlalchemy.orm import declarative_base
 except ImportError:
     from sqlalchemy.ext.declarative import declarative_base
 

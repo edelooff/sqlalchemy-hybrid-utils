@@ -2,10 +2,10 @@
 
 from typing import Any, Callable
 
-from .typing import ColType
+from .typing import ColumnType
 
 
-def column_presence_checker(columnset: Any) -> Callable[[ColType], bool]:
+def column_presence_checker(columnset: Any) -> Callable[[ColumnType], bool]:
     """Returns a check function to determine if a given column is present.
 
     SQLAlchemy 1.4 abstracts the columns in a mapper into a ColumnSet, which
