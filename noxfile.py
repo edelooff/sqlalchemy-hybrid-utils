@@ -18,7 +18,7 @@ def type(session, sqlalchemy):
 @nox.parametrize("sqlalchemy", ["1.3", "1.4", "2.0"])
 def test(session, sqlalchemy):
     args = session.posargs or ["--cov"]
-    session.install("pytest", "coverage[toml]", "pytest-cov")
+    session.install("freezegun", "pytest", "coverage[toml]", "pytest-cov")
     session.install(f"sqlalchemy~={sqlalchemy}")
     session.install(".")
     session.run("pytest", *args)

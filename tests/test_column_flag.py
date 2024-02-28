@@ -1,13 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
+from freezegun import freeze_time
+from sqlalchemy import func
 from sqlalchemy.inspection import inspect
 from sqlalchemy.sql import functions
-
-
-def datetime_equal(test_value, reference, max_delta=1):
-    """Returns whether test value is within max_delta of reference value."""
-    return abs(test_value - reference) < timedelta(seconds=max_delta)
 
 
 @pytest.mark.parametrize(
@@ -57,10 +54,13 @@ def test_assign_default_python_func(Message, session):
     message = Message(content="Spam")
     session.add(message)
     assert message.sent_at is None
-    message.is_delivered = True
-    assert datetime_equal(message.delivered_at, datetime.utcnow())
-    session.commit()
-    assert datetime_equal(message.delivered_at, datetime.utcnow())
+    with freeze_time() as clock:
+        delivery_time = clock()
+        message.is_delivered = True
+        assert message.delivered_at == delivery_time
+        session.commit()
+        clock.tick(1)  # progress time
+        assert message.delivered_at == delivery_time
 
 
 def test_assign_default_scalar(Message, session):
@@ -68,9 +68,9 @@ def test_assign_default_scalar(Message, session):
     session.add(message)
     assert message.sent_at is None
     message.is_sent_scalar = True
-    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+    assert message.sent_at == datetime(2020, 1, 1)
     session.commit()
-    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+    assert message.sent_at == datetime(2020, 1, 1)
 
 
 def test_assign_default_sql_func(Message, session):
@@ -79,32 +79,37 @@ def test_assign_default_sql_func(Message, session):
     assert message.sent_at is None
     message.is_sent = True
     assert isinstance(message.sent_at, functions.Function)
-    session.commit()  # type: ignore[unreachable]
-    assert datetime_equal(message.sent_at, datetime.utcnow())
+    current_time = session.query(func.now()).scalar()  # type: ignore[unreachable]
+    session.commit()
+    assert message.sent_at == current_time
 
 
 def test_default_at_creation_python_func(Message, session):
-    message = Message(content="Spam", is_delivered=True)
-    session.add(message)
-    assert datetime_equal(message.delivered_at, datetime.utcnow())
-    session.commit()
-    assert datetime_equal(message.delivered_at, datetime.utcnow())
+    with freeze_time() as clock:
+        message = Message(content="Spam", is_delivered=True)
+        session.add(message)
+        delivery_time = clock()
+        assert message.delivered_at == delivery_time
+        session.commit()
+        clock.tick(1)  # progress time
+        assert message.delivered_at == delivery_time
 
 
 def test_default_at_creation_scalar(Message, session):
     message = Message(content="Spam", is_sent_scalar=True)
     session.add(message)
-    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+    assert message.sent_at == datetime(2020, 1, 1)
     session.commit()
-    assert datetime_equal(message.sent_at, datetime(2020, 1, 1))
+    assert message.sent_at == datetime(2020, 1, 1)
 
 
 def test_default_at_creation_sql_func(Message, session):
     message = Message(content="Spam", is_sent=True)
     session.add(message)
     assert isinstance(message.sent_at, functions.Function)
+    current_time = session.query(func.now()).scalar()
     session.commit()
-    assert datetime_equal(message.sent_at, datetime.utcnow())
+    assert message.sent_at == current_time
 
 
 @pytest.mark.parametrize(
