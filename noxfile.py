@@ -8,8 +8,9 @@ def lint(session):
 
 
 @nox.session
-def type(session):
-    session.install("mypy", "sqlalchemy-stubs")
+@nox.parametrize("sqlalchemy", ["2.0"])
+def type(session, sqlalchemy):
+    session.install("mypy", f"sqlalchemy~={sqlalchemy}")
     session.run("mypy", *session.posargs)
 
 
@@ -18,6 +19,6 @@ def type(session):
 def test(session, sqlalchemy):
     args = session.posargs or ["--cov"]
     session.install("pytest", "coverage[toml]", "pytest-cov")
-    session.install(f"sqlalchemy=={sqlalchemy}")
+    session.install(f"sqlalchemy~={sqlalchemy}")
     session.install(".")
     session.run("pytest", *args)
